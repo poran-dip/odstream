@@ -1,0 +1,517 @@
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom';
+import { Settings, Play, Square, Folder, Camera, ChevronDown, Plus, Trash2 } from 'lucide-react'
+import ErrorDisplay from '../components/ui/ErrorDisplay'
+import PageHeader from '../components/PageHeader';
+import VideoContainer from '../components/VideoContainer';
+
+interface Settings {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  annotateYOLO: boolean;
+}
+
+interface CameraSource {
+  id: string;
+  name: string;
+  url: string;
+}
+
+const DEFAULT_SOURCES: CameraSource[] = [
+  { id: 'webcam', name: 'Webcam', url: 'http://localhost:5000/api/video_feed' },
+  { id: 'jetson', name: 'Jetson Nano', url: 'http://jetson-nano.local:5000/api/video_feed' }
+];
+
+function ObjectDetectionPage() {
+  const [isDetecting, setIsDetecting] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
+  const [showSettings, setShowSettings] = useState<boolean>(false)
+  const [isRecording, setIsRecording] = useState<boolean>(false)
+  const [showSourceDropdown, setShowSourceDropdown] = useState<boolean>(false)
+  const [selectedSource, setSelectedSource] = useState<CameraSource>(DEFAULT_SOURCES[0])
+  const [customSources, setCustomSources] = useState<CameraSource[]>([])
+  const [newSourceName, setNewSourceName] = useState<string>('')
+  const [newSourceUrl, setNewSourceUrl] = useState<string>('')
+  const [settings, setSettings] = useState<Settings>({
+    brightness: 50,
+    contrast: 50,
+    saturation: 50,
+    annotateYOLO: true
+  })
+  const [detectionStartTime, setDetectionStartTime] = useState(Number);
+  
+  const imgRef = useRef<HTMLImageElement>(null)
+  const navigate = useNavigate()
+
+  // Load custom sources from localStorage on component mount
+  useEffect(() => {
+    const saved = localStorage.getItem('customCameraSources')
+    if (saved) {
+      try {
+        setCustomSources(JSON.parse(saved))
+      } catch (e) {
+        console.error('Failed to parse custom sources:', e)
+      }
+    }
+  }, [])
+
+  // Save custom sources to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('customCameraSources', JSON.stringify(customSources))
+  }, [customSources])
+
+  const getAllSources = (): CameraSource[] => {
+    return [...DEFAULT_SOURCES, ...customSources]
+  }
+
+  const addCustomSource = () => {
+    if (newSourceName.trim() && newSourceUrl.trim()) {
+      const newSource: CameraSource = {
+        id: Date.now().toString(),
+        name: newSourceName.trim(),
+        url: newSourceUrl.trim()
+      }
+      setCustomSources(prev => [...prev, newSource])
+      setNewSourceName('')
+      setNewSourceUrl('')
+    }
+  }
+
+  const deleteCustomSource = (id: string) => {
+    setCustomSources(prev => prev.filter(source => source.id !== id))
+    // If the deleted source was selected, switch to webcam
+    if (selectedSource.id === id) {
+      setSelectedSource(DEFAULT_SOURCES[0])
+    }
+  }
+
+  const startDetection = async () => {
+    setLoading(true)
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/start_camera')
+      
+      if (response.ok) {
+        setIsDetecting(true)
+        setDetectionStartTime(Date.now())
+        // Add a small delay to ensure camera is ready
+        setTimeout(() => {
+          if (imgRef.current) {
+            imgRef.current.src = selectedSource.url
+            imgRef.current.onload = () => console.log('Video stream loaded')
+            imgRef.current.onerror = (e) => {
+              console.error('Video stream error:', e)
+              setError('Failed to load video stream')
+            }
+          }
+        }, 500)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error)
+      }
+    } catch (err) {
+      console.error('Start detection error:', err)
+      setError('Failed to connect to backend')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const stopDetection = async () => {
+    setLoading(true)
+    
+    try {
+      await fetch('http://localhost:5000/api/stop_camera')
+      
+      setIsDetecting(false)
+      if (imgRef.current) {
+        imgRef.current.src = ''
+      }
+    } catch (err) {
+      console.error('Stop detection error:', err)
+      setError('Failed to stop detection')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatElapsedTime = (startTime: number) => {
+    if (!startTime) return '00:00';
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartRecording = () => {
+    if (!isDetecting) {
+      setError("Please start detection first before recording")
+      return
+    } 
+    setIsRecording(true)
+    console.log('Recording started')
+  }
+
+  const handleStopRecording = () => {
+    setIsRecording(false)
+    
+    // Generate filename with current date and time
+    const now = new Date()
+    const filename = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.mp4`
+    
+    // Add new recording to the list
+    console.log('Recording stopped:', filename)
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <PageHeader 
+          title="YOLOv8 Detection System"
+          description="Real-time object detection powered by AI"
+          rightActions={
+            <>
+              {/* Camera Source Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowSourceDropdown(!showSourceDropdown)}
+                  className="w-64 bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105 flex items-center justify-between"
+                >
+                  <div className="flex items-center space-x-2 truncate">
+                    <Camera className="w-5 h-5 text-slate-300 flex-shrink-0" />
+                    <span className="text-sm text-slate-300 truncate">{selectedSource.name}</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                </button>
+                
+                {showSourceDropdown && (
+                  <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-xl shadow-xl z-10">
+                    {getAllSources().map((source) => (
+                      <button
+                        key={source.id}
+                        onClick={() => {
+                          setSelectedSource(source)
+                          setShowSourceDropdown(false)
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-slate-700/50 ${
+                          selectedSource.id === source.id ? 'bg-blue-600/20 text-blue-300' : 'text-slate-300'
+                        }`}
+                      >
+                        {source.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setShowSettings(true)}
+                className="bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105"
+              >
+                <Settings className="w-5 h-5 text-slate-300" />
+              </button>
+              <button
+                onClick={() => navigate('/recordings')}
+                className="bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105"
+              >
+                <Folder className="w-5 h-5 text-slate-300" />
+              </button>
+            </>
+          }
+        />
+
+        {error &&
+          <ErrorDisplay 
+            error={error} 
+            onClose={() => setError('')}
+          />
+        }
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Video Player */}
+          <VideoContainer
+            showPlaceholder={!isDetecting}
+            placeholderTitle="AI Detection Ready"
+            placeholderDescription="Click 'Start Detection' to begin real-time object detection"
+            statusIndicators={
+              <>
+                {isDetecting && (
+                  <div className="bg-green-500/20 border border-green-500/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-green-400 animate-pulse">
+                    ● DETECTING
+                  </div>
+                )}
+                {isRecording && (
+                  <div className="bg-red-500/20 border border-red-500/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-red-400 animate-pulse">
+                    ● RECORDING
+                  </div>
+                )}
+              </>
+            }
+            bottomContent={
+              isDetecting ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-200 mb-1">Detection Active</h3>
+                    <p className="text-slate-400">Time elapsed: {formatElapsedTime(detectionStartTime)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-slate-400">Objects detected: 0 {/*detectedObjects.length*/}</p>
+                    <p className="text-sm text-slate-400">FPS: 0.0 {/*currentFPS*/}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-slate-400 text-center">Start detection to view real-time statistics</p>
+              )
+            }
+          >
+            <img
+              ref={imgRef}
+              alt="Video Stream"
+              className="w-full h-full object-cover"
+            />
+          </VideoContainer>
+
+          {/* Controls Panel */}
+          <div className="space-y-4">
+            {/* Detection Controls */}
+            <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-4 text-slate-200">Detection Controls</h3>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={startDetection}
+                  disabled={loading || isDetecting}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
+                >
+                  <Play className="w-5 h-5" />
+                  <span>{loading ? 'Starting...' : 'Start Detection'}</span>
+                </button>
+                
+                <button
+                  onClick={stopDetection}
+                  disabled={loading || !isDetecting}
+                  className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
+                >
+                  <Square className="w-5 h-5" />
+                  <span>{loading ? 'Stopping...' : 'Stop Detection'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Recording Controls */}
+            <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-4 text-slate-200">Recording</h3>
+              
+              <button
+                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                className={`w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 ${
+                  isRecording
+                    ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700'
+                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
+                }`}
+              >
+                {isRecording ? (
+                  <>
+                    <Square className="w-5 h-5" />
+                    <span>Stop Recording</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5" />
+                    <span>Start Recording</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold mb-4 text-slate-200">System Status</h3>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Detection</span>
+                  <span className={`font-semibold ${isDetecting ? 'text-green-400' : 'text-slate-400'}`}>
+                    {isDetecting ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Recording</span>
+                  <span className={`font-semibold ${isRecording ? 'text-red-400' : 'text-slate-400'}`}>
+                    {isRecording ? 'Recording' : 'Stopped'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Source</span>
+                  <span className="font-semibold text-blue-400">{selectedSource.name}</span>
+                </div>
+                {/*
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Recordings</span>
+                  <span className="font-semibold text-blue-400">{recordings.length}</span>
+                </div>
+                */}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Settings Modal */}
+        {showSettings && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-2xl p-6 w-[800px] max-w-[90vw] max-h-[80vh] overflow-y-auto">
+              <h2 className="text-xl font-bold mb-6 text-slate-100">Settings</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Left Side - Display Settings */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-slate-200">Display Settings</h3>
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">Brightness</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={settings.brightness}
+                        onChange={(e) => setSettings(prev => ({ ...prev, brightness: parseInt(e.target.value) }))}
+                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-sm text-slate-400 mt-1 block">{settings.brightness}%</span>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">Contrast</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={settings.contrast}
+                        onChange={(e) => setSettings(prev => ({ ...prev, contrast: parseInt(e.target.value) }))}
+                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-sm text-slate-400 mt-1 block">{settings.contrast}%</span>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">Saturation</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={settings.saturation}
+                        onChange={(e) => setSettings(prev => ({ ...prev, saturation: parseInt(e.target.value) }))}
+                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-sm text-slate-400 mt-1 block">{settings.saturation}%</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="annotateYOLO"
+                        checked={settings.annotateYOLO}
+                        onChange={(e) => setSettings(prev => ({ ...prev, annotateYOLO: e.target.checked }))}
+                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="annotateYOLO" className="text-sm text-slate-300">
+                        Enable YOLOv8 Annotations
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side - Camera Sources */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-slate-200">Camera Sources</h3>
+                  
+                  {/* Add New Source */}
+                  <div className="bg-slate-700/30 rounded-xl p-4 mb-4">
+                    <h4 className="text-sm font-medium mb-3 text-slate-300">Add Custom Source</h4>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Source name"
+                        value={newSourceName}
+                        onChange={(e) => setNewSourceName(e.target.value)}
+                        className="w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-3 py-2 text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <input
+                        type="url"
+                        placeholder="Stream URL"
+                        value={newSourceUrl}
+                        onChange={(e) => setNewSourceUrl(e.target.value)}
+                        className="w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-3 py-2 text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        onClick={addCustomSource}
+                        disabled={!newSourceName.trim() || !newSourceUrl.trim()}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Source</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Sources List */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-slate-300">Available Sources</h4>
+                    
+                    {/* Default Sources */}
+                    {DEFAULT_SOURCES.map((source) => (
+                      <div key={source.id} className="bg-slate-700/20 rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-slate-200">{source.name}</div>
+                          <div className="text-xs text-slate-400 truncate">{source.url}</div>
+                        </div>
+                        <div className="text-xs text-slate-500">Default</div>
+                      </div>
+                    ))}
+                    
+                    {/* Custom Sources */}
+                    {customSources.map((source) => (
+                      <div key={source.id} className="bg-slate-700/20 rounded-lg p-3 flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-slate-200">{source.name}</div>
+                          <div className="text-xs text-slate-400 truncate">{source.url}</div>
+                        </div>
+                        <button
+                          onClick={() => deleteCustomSource(source.id)}
+                          className="ml-2 text-red-400 hover:text-red-300 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {customSources.length === 0 && (
+                      <div className="text-center py-4 text-slate-500 text-sm">
+                        No custom sources added yet
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end mt-8">
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default ObjectDetectionPage
