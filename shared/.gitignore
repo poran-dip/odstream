@@ -1,0 +1,7 @@
+# Ignore everything user generated
+**
+
+# But keep the folders and their README.md files, and this .gitignore
+!*/
+!.gitignore
+!README.md

@@ -145,25 +145,104 @@ function ObjectDetectionPage() {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const handleStartRecording = () => {
+  const handleStartRecording = async () => {
     if (!isDetecting) {
       setError("Please start detection first before recording")
       return
-    } 
-    setIsRecording(true)
-    console.log('Recording started')
+    }
+    
+    try {
+      setError("")
+      const response = await fetch('http://localhost:5000/api/start_recording', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // Optional: you can specify a custom output path
+          // output_path: "custom_recording.mp4"
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok && data.success) {
+        setIsRecording(true)
+        console.log('Recording started:', data.message)
+      } else {
+        setError(data.error || "Failed to start recording")
+        console.error('Failed to start recording:', data.error)
+      }
+    } catch (error) {
+        console.error('Error starting recording:', error)
+        if (error instanceof Error) {
+          setError("Error stopping recording: " + error.message);
+        } else {
+          setError("Error stopping recording: " + String(error));
+      }
+    }
   }
 
-  const handleStopRecording = () => {
-    setIsRecording(false)
-    
-    // Generate filename with current date and time
-    const now = new Date()
-    const filename = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.mp4`
-    
-    // Add new recording to the list
-    console.log('Recording stopped:', filename)
+  const handleStopRecording = async () => {
+    try {
+      setError("")
+      const response = await fetch('http://localhost:5000/api/stop_recording', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok && data.success) {
+        setIsRecording(false)
+        console.log('Recording stopped:', data.message)
+        
+        // Show success message
+        console.log('Recording saved:', data.filename)
+      } else {
+        setError(data.error || "Failed to stop recording")
+        console.error('Failed to stop recording:', data.error)
+      }
+    } catch (error) {
+        console.error('Error stopping recording:', error)
+        if (error instanceof Error) {
+          setError("Error stopping recording: " + error.message);
+        } else {
+          setError("Error stopping recording: " + String(error));
+      }
+    }
   }
+
+  const handleTakeSnapshot = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/snapshot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Show success message or notification
+        console.log('Snapshot taken:', data.message);
+        // You can add a toast notification here if you have one
+      } else {
+        setError(data.error || "Snapshot failed")
+        console.error('Snapshot failed:', data.error);
+      }
+    } catch (error) {
+        console.error('Error taking snapshot:', error)
+        if (error instanceof Error) {
+          setError("Error taking snapshot: " + error.message);
+        } else {
+          setError("Error taking snapshot: " + String(error));
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
@@ -308,7 +387,7 @@ function ObjectDetectionPage() {
               
               <button
                 onClick={isRecording ? handleStopRecording : handleStartRecording}
-                className={`w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 ${
+                className={`w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 mb-3 ${
                   isRecording
                     ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700'
                     : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
@@ -325,6 +404,14 @@ function ObjectDetectionPage() {
                     <span>Start Recording</span>
                   </>
                 )}
+              </button>
+
+              <button
+                onClick={handleTakeSnapshot}
+                className="w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+              >
+                <Camera className="w-5 h-5" />
+                <span>Take Snapshot</span>
               </button>
             </div>
 
