@@ -7,13 +7,19 @@ camera_bp = Blueprint('camera', __name__)
 # Initialize camera manager
 camera_manager = CameraManager()
 
-@camera_bp.route('/api/start_camera')
+@camera_bp.route('/api/start_camera', methods=['POST'])
 def start_camera():
-    """Start camera endpoint"""
-    success, message = camera_manager.start_camera()
+    """Start camera endpoint with optional source parameter"""
+    data = request.get_json() or {}
+    source = data.get('source')
+    
+    success, message = camera_manager.start_camera(source)
     
     if success:
-        return jsonify({'message': message})
+        return jsonify({
+            'message': message,
+            'source': camera_manager.camera_source
+        })
     else:
         return jsonify({'error': message}), 500
 
@@ -49,7 +55,8 @@ def take_snapshot():
         return jsonify({
             'success': True,
             'message': message,
-            'filepath': filepath
+            'filepath': filepath,
+            'source': camera_manager.camera_source
         })
     else:
         return jsonify({
@@ -69,7 +76,8 @@ def start_recording():
         return jsonify({
             'success': True,
             'message': message,
-            'recording': True
+            'recording': True,
+            'source': camera_manager.camera_source
         })
     else:
         return jsonify({
@@ -93,7 +101,8 @@ def stop_recording():
             'success': True,
             'message': message,
             'recording': False,
-            'filename': filename
+            'filename': filename,
+            'source': camera_manager.camera_source
         })
     else:
         return jsonify({
@@ -107,7 +116,8 @@ def recording_status():
     return jsonify({
         'recording': camera_manager.is_recording,
         'filename': camera_manager.recording_filename,
-        'camera_active': camera_manager.is_camera_active()
+        'camera_active': camera_manager.is_camera_active(),
+        'source': camera_manager.camera_source
     })
 
 @camera_bp.route('/api/debug')
@@ -117,7 +127,9 @@ def debug():
         'model_loaded': camera_manager.model is not None,
         'camera_active': camera_manager.is_camera_active(),
         'recording': camera_manager.is_recording,
-        'recording_filename': camera_manager.recording_filename
+        'recording_filename': camera_manager.recording_filename,
+        'camera_source': camera_manager.camera_source,
+        'remote_stream_active': camera_manager.remote_stream_active if hasattr(camera_manager, 'remote_stream_active') else None
     })
 
 def get_camera_manager():

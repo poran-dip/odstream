@@ -3,6 +3,7 @@ import { Folder, Play, Trash2, Edit2, Check, X, RefreshCw, Settings } from 'luci
 import ErrorDisplay from '../components/ui/ErrorDisplay';
 import PageHeader from '../components/PageHeader';
 import VideoContainer from '../components/VideoContainer';
+import { formatDate, formatFileSize } from '../utils/formatters';
 
 interface VideoFile {
   id: string;
@@ -183,18 +184,6 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
       setError('Failed to change path');
       console.error('Error changing path:', error);
     }
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formatDate = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleDateString();
   };
 
   const getVideoUrl = (filename: string): string => {

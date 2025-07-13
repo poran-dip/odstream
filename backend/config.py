@@ -6,6 +6,14 @@ DEFAULT_VIDEO_PATH = Path(__file__).resolve().parent.parent / 'shared' / 'record
 DEFAULT_SNAPS_PATH = Path(__file__).resolve().parent.parent / 'shared' / 'screenshots'
 DEFAULT_LOG_PATH = Path(__file__).resolve().parent.parent / 'shared' / 'detections'
 
+API_BASE_URL = "http://localhost:5000/api"
+JETSON_API_BASE_URL = "http://jetson-nano.local:5000/api"
+
+DEFAULT_SOURCES = [
+    {"id": "local", "name": "Local Camera", "url": None},
+    {"id": "jetson1", "name": "Jetson Nano", "url": f"{JETSON_API_BASE_URL}/video_feed"}
+]
+
 class Config:
     """Application configuration"""
     DEBUG = True

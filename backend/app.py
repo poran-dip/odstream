@@ -37,6 +37,7 @@ def main():
         print("You can change the path using the /api/config/path endpoint")
     
     app.run(
+        host='0.0.0.0',
         debug=Config.DEBUG,
         port=Config.PORT,
         threaded=Config.THREADED

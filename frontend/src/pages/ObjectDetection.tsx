@@ -4,6 +4,11 @@ import { Settings, Play, Square, Folder, Camera, ChevronDown, Plus, Trash2 } fro
 import ErrorDisplay from '../components/ui/ErrorDisplay'
 import PageHeader from '../components/PageHeader';
 import VideoContainer from '../components/VideoContainer';
+import { formatElapsedTime } from '../utils/formatters';
+import { detectionApi } from '../utils/api';
+import { settingsStorage, storageUtils } from '../utils/storage';
+import { DEFAULT_SOURCES } from '../utils/config';
+{/*import ControlsPanel from '../components/ControlsPanel';*/}
 
 interface Settings {
   brightness: number;
@@ -18,11 +23,6 @@ interface CameraSource {
   url: string;
 }
 
-const DEFAULT_SOURCES: CameraSource[] = [
-  { id: 'webcam', name: 'Webcam', url: 'http://localhost:5000/api/video_feed' },
-  { id: 'jetson', name: 'Jetson Nano', url: 'http://jetson-nano.local:5000/api/video_feed' }
-];
-
 function ObjectDetectionPage() {
   const [isDetecting, setIsDetecting] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
@@ -34,33 +34,16 @@ function ObjectDetectionPage() {
   const [customSources, setCustomSources] = useState<CameraSource[]>([])
   const [newSourceName, setNewSourceName] = useState<string>('')
   const [newSourceUrl, setNewSourceUrl] = useState<string>('')
-  const [settings, setSettings] = useState<Settings>({
-    brightness: 50,
-    contrast: 50,
-    saturation: 50,
-    annotateYOLO: true
-  })
+  const [settings, setSettings] = useState<Settings>(() => settingsStorage.getSettings());
   const [detectionStartTime, setDetectionStartTime] = useState(Number);
   
   const imgRef = useRef<HTMLImageElement>(null)
   const navigate = useNavigate()
 
-  // Load custom sources from localStorage on component mount
+  // Load custom sources from storage on component mount
   useEffect(() => {
-    const saved = localStorage.getItem('customCameraSources')
-    if (saved) {
-      try {
-        setCustomSources(JSON.parse(saved))
-      } catch (e) {
-        console.error('Failed to parse custom sources:', e)
-      }
-    }
+    setCustomSources(storageUtils.getCustomSources())
   }, [])
-
-  // Save custom sources to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('customCameraSources', JSON.stringify(customSources))
-  }, [customSources])
 
   const getAllSources = (): CameraSource[] => {
     return [...DEFAULT_SOURCES, ...customSources]
@@ -68,11 +51,7 @@ function ObjectDetectionPage() {
 
   const addCustomSource = () => {
     if (newSourceName.trim() && newSourceUrl.trim()) {
-      const newSource: CameraSource = {
-        id: Date.now().toString(),
-        name: newSourceName.trim(),
-        url: newSourceUrl.trim()
-      }
+      const newSource = storageUtils.addCustomSource(newSourceName, newSourceUrl)
       setCustomSources(prev => [...prev, newSource])
       setNewSourceName('')
       setNewSourceUrl('')
@@ -80,6 +59,7 @@ function ObjectDetectionPage() {
   }
 
   const deleteCustomSource = (id: string) => {
+    storageUtils.removeCustomSource(id)
     setCustomSources(prev => prev.filter(source => source.id !== id))
     // If the deleted source was selected, switch to webcam
     if (selectedSource.id === id) {
@@ -87,13 +67,18 @@ function ObjectDetectionPage() {
     }
   }
 
+  // Update settings to localStorage
+  useEffect(() => {
+    settingsStorage.saveSettings(settings);
+  }, [settings]);
+
   const startDetection = async () => {
     setLoading(true)
     
     try {
-      const response = await fetch('http://localhost:5000/api/start_camera')
+      const response = await detectionApi.startCamera(selectedSource)
       
-      if (response.ok) {
+      if (response.message && !response.error) {
         setIsDetecting(true)
         setDetectionStartTime(Date.now())
         // Add a small delay to ensure camera is ready
@@ -108,8 +93,7 @@ function ObjectDetectionPage() {
           }
         }, 500)
       } else {
-        const errorData = await response.json()
-        setError(errorData.error)
+        setError(response.error || response.message || "Something went wrong");
       }
     } catch (err) {
       console.error('Start detection error:', err)
@@ -123,7 +107,7 @@ function ObjectDetectionPage() {
     setLoading(true)
     
     try {
-      await fetch('http://localhost:5000/api/stop_camera')
+      await detectionApi.stopCamera()
       
       setIsDetecting(false)
       if (imgRef.current) {
@@ -137,14 +121,6 @@ function ObjectDetectionPage() {
     }
   }
 
-  const formatElapsedTime = (startTime: number) => {
-    if (!startTime) return '00:00';
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
   const handleStartRecording = async () => {
     if (!isDetecting) {
       setError("Please start detection first before recording")
@@ -153,32 +129,21 @@ function ObjectDetectionPage() {
     
     try {
       setError("")
-      const response = await fetch('http://localhost:5000/api/start_recording', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          // Optional: you can specify a custom output path
-          // output_path: "custom_recording.mp4"
-        })
-      })
+      const response = await detectionApi.startRecording()
       
-      const data = await response.json()
-      
-      if (response.ok && data.success) {
+      if (response.success) {
         setIsRecording(true)
-        console.log('Recording started:', data.message)
+        console.log('Recording started:', response.message)
       } else {
-        setError(data.error || "Failed to start recording")
-        console.error('Failed to start recording:', data.error)
+        setError(response.error || "Failed to start recording")
+        console.error('Failed to start recording:', response.error)
       }
     } catch (error) {
         console.error('Error starting recording:', error)
         if (error instanceof Error) {
-          setError("Error stopping recording: " + error.message);
+          setError("Error starting recording: " + error.message);
         } else {
-          setError("Error stopping recording: " + String(error));
+          setError("Error starting recording: " + String(error));
       }
     }
   }
@@ -186,24 +151,17 @@ function ObjectDetectionPage() {
   const handleStopRecording = async () => {
     try {
       setError("")
-      const response = await fetch('http://localhost:5000/api/stop_recording', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
+      const response = await detectionApi.stopRecording()
       
-      const data = await response.json()
-      
-      if (response.ok && data.success) {
+      if (response.success) {
         setIsRecording(false)
-        console.log('Recording stopped:', data.message)
+        console.log('Recording stopped:', response.message)
         
         // Show success message
-        console.log('Recording saved:', data.filename)
+        console.log('Recording saved:', response.data?.filename ?? 'Unknown filename')
       } else {
-        setError(data.error || "Failed to stop recording")
-        console.error('Failed to stop recording:', data.error)
+        setError(response.error || "Failed to stop recording")
+        console.error('Failed to stop recording:', response.error)
       }
     } catch (error) {
         console.error('Error stopping recording:', error)
@@ -217,22 +175,15 @@ function ObjectDetectionPage() {
 
   const handleTakeSnapshot = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/snapshot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await detectionApi.takeSnapshot()
       
-      const data = await response.json();
-      
-      if (data.success) {
+      if (response.success) {
         // Show success message or notification
-        console.log('Snapshot taken:', data.message);
-        // You can add a toast notification here if you have one
+        console.log('Snapshot taken:', response.message);
+        setError("Snapshot taken!")
       } else {
-        setError(data.error || "Snapshot failed")
-        console.error('Snapshot failed:', data.error);
+        setError(response.error || "Snapshot failed")
+        console.error('Snapshot failed:', response.error);
       }
     } catch (error) {
         console.error('Error taking snapshot:', error)
@@ -243,7 +194,7 @@ function ObjectDetectionPage() {
       }
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
       <div className="max-w-7xl mx-auto p-6">
@@ -355,6 +306,16 @@ function ObjectDetectionPage() {
           </VideoContainer>
 
           {/* Controls Panel */}
+          {/*<ControlsPanel 
+            isDetecting = {isDetecting}
+            isRecording = {isRecording}
+            loading={loading}
+            onStartDetection={startDetection}
+            onStopDetection={stopDetection}
+            onStartRecording={handleStartRecording}
+            onStopRecording={handleStopRecording}
+            onTakeSnapshot={handleTakeSnapshot}
+          />*/}
           <div className="space-y-4">
             {/* Detection Controls */}
             <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl p-6">

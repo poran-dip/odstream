@@ -24,6 +24,7 @@ The interface supports real-time control, recording, playback, and Python-based 
 * Display and playback saved recordings
 * Trigger and display YOLO-based object detection from the frontend
 * Frontend/backend integration (Vite + Flask)
+* Supports remote backend running on a Jetson Nano via [uwod-remote](https://github.com/poran-dip/uwod-remote)
 
 ---
 
@@ -33,6 +34,7 @@ The interface supports real-time control, recording, playback, and Python-based 
 | ---------------- | ----------------------------- |
 | Frontend         | React (via Vite), TailwindCSS |
 | Backend          | Python, Flask                 |
+| Remote Backend   | Flask on Jetson Nano          |
 | Object Detection | YOLOv8 (Ultralytics)          |
 | Hardware Targets | Jetson Nano, RealSense Camera |
 
@@ -65,6 +67,14 @@ uwod-rc
         ├── assets       # Assets for components
         └── components   # Reusable UI components
             └── ui       # UI primitives
+
+# Jetson-side remote backend (separate repo)
+uwod-remote
+├── .gitignore           # As per usual
+├── app.py               # Jetson Flask entrypoint
+├── jetson_camera.py     # Stream handling and detection logic
+├── jetson_routes.py     # Defines all Flask API endpoints
+└── requirements.txt     # Dependencies for remote backend
 ```
 ---
 
@@ -75,10 +85,10 @@ uwod-rc
 - [x] Vite + Tailwind frontend
 - [x] Video source selection dropdown
 - [x] Live camera feed display
-- [ ] Recording and saving `.mp4` files
+- [x] Recording and saving `.mp4` files
 - [x] Playback for saved videos
-- [ ] Stream from Jetson Nano
-- [ ] Jetson connection settings in modal
+- [x] Stream from Jetson Nano
+- [x] Jetson connection settings in modal
 
 ### Phase 2 – Detection Pipeline
 
@@ -89,7 +99,7 @@ uwod-rc
 ### Phase 3 – Deployment & Polish
 
 * [ ] Auto-deploy scripts for Jetson + host
-* [ ] Optional LAN streaming support (e.g., WebRTC/MJPEG)
+* [x] Optional LAN streaming support (e.g., WebRTC/MJPEG)
 * [x] Basic mobile responsiveness
 
 ---
@@ -114,7 +124,7 @@ uwod-rc
 
 * Minimal dependencies, modern stack
 * Recording format: `YYYYMMDD-HHMM.mp4` (e.g., `20250704-1315.mp4`)
-* Network-based live stream and object detection are under development
+* Network-based live stream and object detection are now supported (improvements needed)
 
 ---
 
