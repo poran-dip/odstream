@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, Response, request
+from flask_socketio import emit
 from camera_manager import CameraManager
 
 # Create blueprint
@@ -6,6 +7,14 @@ camera_bp = Blueprint('camera', __name__)
 
 # Initialize camera manager
 camera_manager = CameraManager()
+
+# This will be injected by the main app
+socketio = None
+
+def init_socketio(socketio_instance):
+    """Initialize socketio instance for this blueprint"""
+    global socketio
+    socketio = socketio_instance
 
 @camera_bp.route('/api/start_camera', methods=['POST'])
 def start_camera():
@@ -16,6 +25,14 @@ def start_camera():
     success, message = camera_manager.start_camera(source)
     
     if success:
+        # Broadcast to all connected clients
+        if socketio:
+            socketio.emit('camera_status', {
+                'active': True,
+                'source': camera_manager.camera_source,
+                'message': message
+            })
+        
         return jsonify({
             'message': message,
             'source': camera_manager.camera_source
@@ -29,9 +46,35 @@ def stop_camera():
     success, message = camera_manager.stop_camera()
     
     if success:
+        # Broadcast to all connected clients
+        if socketio:
+            socketio.emit('camera_status', {
+                'active': False,
+                'source': None,
+                'message': message
+            })
+        
         return jsonify({'message': message})
     else:
         return jsonify({'error': message}), 500
+
+@camera_bp.route('/api/is_camera_active')
+def is_camera_active():
+    """"Check if a camera is already active"""
+    is_active = camera_manager.is_camera_active()
+
+    if is_active:
+        return jsonify({ 
+            "message": "Camera active", 
+            "data": { 
+                "active": True 
+        }})
+    else:
+        return jsonify({ 
+            "message": "Camera inactive", 
+            "data": {
+                "active": False 
+        }})
 
 @camera_bp.route('/api/video_feed')
 def video_feed():
@@ -52,6 +95,15 @@ def take_snapshot():
     success, message, filepath = camera_manager.take_snapshot()
     
     if success:
+        # Broadcast snapshot event to all connected clients
+        if socketio:
+            socketio.emit('snapshot_taken', {
+                'success': True,
+                'message': message,
+                'filepath': filepath,
+                'source': camera_manager.camera_source
+            })
+        
         return jsonify({
             'success': True,
             'message': message,
@@ -73,6 +125,14 @@ def start_recording():
     success, message = camera_manager.start_recording(output_path)
     
     if success:
+        # Broadcast to all connected clients
+        if socketio:
+            socketio.emit('recording_status', {
+                'recording': True,
+                'message': message,
+                'source': camera_manager.camera_source
+            })
+        
         return jsonify({
             'success': True,
             'message': message,
@@ -97,6 +157,15 @@ def stop_recording():
         filename = None
     
     if success:
+        # Broadcast to all connected clients
+        if socketio:
+            socketio.emit('recording_status', {
+                'recording': False,
+                'message': message,
+                'filename': filename,
+                'source': camera_manager.camera_source
+            })
+        
         return jsonify({
             'success': True,
             'message': message,
@@ -131,6 +200,24 @@ def debug():
         'camera_source': camera_manager.camera_source,
         'remote_stream_active': camera_manager.remote_stream_active if hasattr(camera_manager, 'remote_stream_active') else None
     })
+
+# Socket event handlers
+def handle_connect(socketio_instance):
+    """Handle client connection"""
+    print('Client connected')
+    # Send current state to newly connected client
+    socketio_instance.emit('camera_status', {
+        'active': camera_manager.is_camera_active(),
+        'source': camera_manager.camera_source
+    })
+    socketio_instance.emit('recording_status', {
+        'recording': camera_manager.is_recording,
+        'filename': camera_manager.recording_filename
+    })
+
+def handle_disconnect():
+    """Handle client disconnection"""
+    print('Client disconnected')
 
 def get_camera_manager():
     """Get the camera manager instance"""

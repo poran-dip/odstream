@@ -1,3 +1,4 @@
+import { io, Socket } from 'socket.io-client';
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Settings, Play, Square, Folder, Camera, ChevronDown, Plus, Trash2 } from 'lucide-react'
@@ -7,7 +8,7 @@ import VideoContainer from '../components/VideoContainer';
 import { formatElapsedTime } from '../utils/formatters';
 import { detectionApi } from '../utils/api';
 import { settingsStorage, storageUtils } from '../utils/storage';
-import { DEFAULT_SOURCES } from '../utils/config';
+import { API_BASE_URL, DEFAULT_SOURCES } from '../utils/config';
 {/*import ControlsPanel from '../components/ControlsPanel';*/}
 
 interface Settings {
@@ -24,6 +25,7 @@ interface CameraSource {
 }
 
 function ObjectDetectionPage() {
+  const [socket, setSocket] = useState<Socket | null>(null)
   const [isDetecting, setIsDetecting] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
@@ -36,6 +38,7 @@ function ObjectDetectionPage() {
   const [newSourceUrl, setNewSourceUrl] = useState<string>('')
   const [settings, setSettings] = useState<Settings>(() => settingsStorage.getSettings());
   const [detectionStartTime, setDetectionStartTime] = useState(Number);
+  const [showStopConfirmation, setShowStopConfirmation] = useState<boolean>(false);
   
   const imgRef = useRef<HTMLImageElement>(null)
   const navigate = useNavigate()
@@ -72,106 +75,177 @@ function ObjectDetectionPage() {
     settingsStorage.saveSettings(settings);
   }, [settings]);
 
-  const startDetection = async () => {
-    setLoading(true)
-    
-    try {
-      const response = await detectionApi.startCamera(selectedSource)
+  useEffect(() => {
+    const newSocket = io(API_BASE_URL.replace('/api', ''));
+    setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('Connected to backend socket');
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Disconnected from backend socket');
+    });
+
+    newSocket.on('camera_status', (data) => {
+      console.log('Camera status update:', data);
       
-      if (response.message && !response.error) {
-        setIsDetecting(true)
-        setDetectionStartTime(Date.now())
-        // Add a small delay to ensure camera is ready
+      if (data.active) {
+        setIsDetecting(true);
+        setDetectionStartTime(Date.now());
+        
+        console.log("Camera active logged")
+        
         setTimeout(() => {
           if (imgRef.current) {
-            imgRef.current.src = selectedSource.url
-            imgRef.current.onload = () => console.log('Video stream loaded')
-            imgRef.current.onerror = (e) => {
-              console.error('Video stream error:', e)
-              setError('Failed to load video stream')
+            const videoUrl = data.source?.url;
+            
+            if (videoUrl) {
+              console.log("Setting up MJPEG stream:", videoUrl);
+              
+              // For MJPEG streams, set the src ONCE and let the stream handle updates
+              imgRef.current.src = videoUrl;
+              
+              imgRef.current.onload = () => {
+                console.log('MJPEG stream connected successfully');
+              };
+              
+              imgRef.current.onerror = (e) => {
+                console.error('MJPEG stream error:', e);
+                
+                // Retry once after a delay
+                setTimeout(() => {
+                  if (imgRef.current && isDetecting) {
+                    console.log("Retrying MJPEG stream connection...");
+                    imgRef.current.src = videoUrl;
+                  }
+                }, 2000);
+              };
             }
           }
-        }, 500)
+        }, 100);
+      } else {
+        setIsDetecting(false);
+        if (imgRef.current) {
+          imgRef.current.src = '';
+        }
+      }
+    });
+
+    newSocket.on('recording_status', (data) => {
+      console.log('Recording status update:', data);
+      setIsRecording(data.recording);
+    });
+
+    // Clean up on unmount
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const checkCameraStatus = async () => {
+      try {
+        const response = await detectionApi.isCameraActive();
+        if (response.data.active) {
+          setIsDetecting(true);
+          setDetectionStartTime(Date.now());
+          
+          if (imgRef.current) {
+            imgRef.current.src = selectedSource.url;
+            imgRef.current.onload = () => console.log('Video stream loaded on mount');
+            imgRef.current.onerror = (e) => {
+              console.error('Video stream error:', e);
+              setError('Failed to load video stream');
+            };
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check camera status:", err);
+      }
+    };
+
+    // Only check on mount - socket will handle updates after that
+    checkCameraStatus();
+  }, []);
+
+  const startDetection = async () => {
+    setLoading(true);
+    
+    try {
+      const response = await detectionApi.startCamera(selectedSource);
+      
+      if (response.message && !response.error) {
+        console.log('Detection start request sent');
       } else {
         setError(response.error || response.message || "Something went wrong");
       }
     } catch (err) {
-      console.error('Start detection error:', err)
-      setError('Failed to connect to backend')
+      console.error('Start detection error:', err);
+      setError('Failed to connect to backend');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const stopDetection = async () => {
-    setLoading(true)
+  const handleStopDetectionClick = () => {
+    setShowStopConfirmation(true);
+  };
+
+  const confirmStopDetection = async () => {
+    setShowStopConfirmation(false);
+    setLoading(true);
     
     try {
-      await detectionApi.stopCamera()
-      
-      setIsDetecting(false)
-      if (imgRef.current) {
-        imgRef.current.src = ''
-      }
+      await detectionApi.stopCamera();
+      // Don't set state here - let the socket event handle it
+      console.log('Detection stop request sent');
     } catch (err) {
-      console.error('Stop detection error:', err)
-      setError('Failed to stop detection')
+      console.error('Stop detection error:', err);
+      setError('Failed to stop detection');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleStartRecording = async () => {
     if (!isDetecting) {
-      setError("Please start detection first before recording")
-      return
+      setError("Please start detection first before recording");
+      return;
     }
     
     try {
-      setError("")
-      const response = await detectionApi.startRecording()
+      setError("");
+      const response = await detectionApi.startRecording();
       
       if (response.success) {
-        setIsRecording(true)
-        console.log('Recording started:', response.message)
+        // Don't set state here - let the socket event handle it
+        console.log('Recording start request sent');
       } else {
-        setError(response.error || "Failed to start recording")
-        console.error('Failed to start recording:', response.error)
+        setError(response.error || "Failed to start recording");
       }
     } catch (error) {
-        console.error('Error starting recording:', error)
-        if (error instanceof Error) {
-          setError("Error starting recording: " + error.message);
-        } else {
-          setError("Error starting recording: " + String(error));
-      }
+      console.error('Error starting recording:', error);
+      setError("Error starting recording: " + (error instanceof Error ? error.message : String(error)));
     }
-  }
+  };
 
   const handleStopRecording = async () => {
     try {
-      setError("")
-      const response = await detectionApi.stopRecording()
+      setError("");
+      const response = await detectionApi.stopRecording();
       
       if (response.success) {
-        setIsRecording(false)
-        console.log('Recording stopped:', response.message)
-        
-        // Show success message
-        console.log('Recording saved:', response.data?.filename ?? 'Unknown filename')
+        // Don't set state here - let the socket event handle it
+        console.log('Recording stop request sent');
       } else {
-        setError(response.error || "Failed to stop recording")
-        console.error('Failed to stop recording:', response.error)
+        setError(response.error || "Failed to stop recording");
       }
     } catch (error) {
-        console.error('Error stopping recording:', error)
-        if (error instanceof Error) {
-          setError("Error stopping recording: " + error.message);
-        } else {
-          setError("Error stopping recording: " + String(error));
-      }
+      console.error('Error stopping recording:', error);
+      setError("Error stopping recording: " + (error instanceof Error ? error.message : String(error)));
     }
-  }
+  };
 
   const handleTakeSnapshot = async () => {
     try {
@@ -260,6 +334,33 @@ function ObjectDetectionPage() {
           />
         }
 
+        {/* Stop Detection Confirmation Dialog */}
+        {showStopConfirmation && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-2xl p-6 w-[500px] max-w-[90vw]">
+              <h2 className="text-xl font-bold mb-4 text-slate-100">Stop Detection</h2>
+              <p className="text-slate-300 mb-6">
+                This will stop detection for <strong>EVERY computer</strong> connected to this network. Are you sure you want to proceed?
+              </p>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowStopConfirmation(false)}
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmStopDetection}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  Stop Detection
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Video Player */}
@@ -332,7 +433,7 @@ function ObjectDetectionPage() {
                 </button>
                 
                 <button
-                  onClick={stopDetection}
+                  onClick={handleStopDetectionClick}
                   disabled={loading || !isDetecting}
                   className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
                 >

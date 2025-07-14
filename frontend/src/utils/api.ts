@@ -37,6 +37,11 @@ export const detectionApi = {
     return response.json();
   },
 
+  isCameraActive: async (): Promise<ApiResponse> => {
+    const response = await fetch(`${API_BASE_URL}/is_camera_active`);
+    return response.json();
+  },
+
   startRecording: async (outputPath?: string): Promise<ApiResponse> => {
     const response = await fetch(`${API_BASE_URL}/start_recording`, {
       method: 'POST',

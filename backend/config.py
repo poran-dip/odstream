@@ -15,6 +15,8 @@ DEFAULT_SOURCES = [
 ]
 
 class Config:
+    SECRET_KEY = "YOLOTUBE_69"
+
     """Application configuration"""
     DEBUG = True
     PORT = 5000
