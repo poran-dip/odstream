@@ -3,7 +3,7 @@ from flask_socketio import SocketIO
 from flask_cors import CORS
 from config import Config
 from routes.video_routes import video_bp, get_video_manager
-from routes.camera_routes import camera_bp, init_socketio
+from routes.camera_routes import camera_bp, init_socketio, get_camera_manager
 from routes.config_routes import config_bp
 from routes.socket_events import register_socket_events
 
@@ -28,6 +28,15 @@ def create_app():
     app.register_blueprint(video_bp)
     app.register_blueprint(camera_bp)
     app.register_blueprint(config_bp)
+    
+    # Auto-start camera after app initialization
+    with app.app_context():
+        camera_manager = get_camera_manager()
+        success, message = camera_manager.start_camera()
+        if success:
+            print(f"✓ Camera auto-started: {message}")
+        else:
+            print(f"✗ Failed to auto-start camera: {message}")
     
     return app, socketio
 

@@ -20,8 +20,11 @@ class CameraManager:
         self.stable_frames_required = 3
         self.last_logged_detection = None
         
+        # Detection mode - controls whether YOLO is applied
+        self.detection_enabled = False
+        
         # Remote source support
-        self.camera_source = None  # {"id": "local", "name": "Local Camera", "url": None} or remote
+        self.camera_source = None
         self.remote_camera = False
         self.remote_frame_buffer = None
         self.remote_frame_lock = threading.Lock()
@@ -190,19 +193,18 @@ class CameraManager:
             
             source_url = self.camera_source.get('url')
             self.remote_camera = source_url is not None and not any(
-                host in source_url.lower() for host in ['localhost', '127.0.0.1', '192.168.29.203']
+                host in source_url.lower() for host in ['localhost', '127.0.0.1', '192.168.29.203', '10.150.22.122']
             )
             
-            # Load model if not loaded
-            if self.model is None:
-                if not self.load_model():
-                    return False, "Failed to load model"
+            # Load model for local cameras (needed for detection mode)
+            if not self.remote_camera:
+                if self.model is None:
+                    if not self.load_model():
+                        print("Warning: Model failed to load - detection features will be disabled")
             
             # Handle remote source
             if self.remote_camera:
                 success, message = self._start_remote_detection()
-                if success:
-                    self._init_log_file()
                 return success, message
             
             # Handle local camera
@@ -216,9 +218,6 @@ class CameraManager:
             self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, Config.CAMERA_WIDTH)
             self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, Config.CAMERA_HEIGHT)
             self.camera.set(cv2.CAP_PROP_FPS, Config.CAMERA_FPS)
-            
-            # Initialize log file
-            self._init_log_file()
             
             print("Camera started successfully")
             return True, "Camera started successfully"
@@ -241,6 +240,9 @@ class CameraManager:
                 self.detection_buffer = []
                 self.last_logged_detection = None
             
+            # Disable detection
+            self.detection_enabled = False
+            
             # Handle remote source
             if self.remote_camera:
                 success, message = self._stop_remote_detection()
@@ -261,6 +263,16 @@ class CameraManager:
         except Exception as e:
             print(f"Error stopping camera: {e}")
             return False, str(e)
+    
+    def change_camera_source(self, source):
+        """Change camera source (stops current camera and starts new one)"""
+        print(f"Changing camera source to: {source}")
+        
+        # Stop current camera
+        self.stop_camera()
+        
+        # Start new camera
+        return self.start_camera(source)
     
     def is_camera_active(self):
         """Check if camera is active"""
@@ -293,8 +305,8 @@ class CameraManager:
             if not success or frame is None:
                 return False, "Failed to capture frame", None
             
-            # Apply YOLO detection only for local camera when model is loaded
-            if not self.remote_camera and self.model is not None:
+            # Apply YOLO detection if enabled and available
+            if self.detection_enabled and not self.remote_camera and self.model is not None:
                 results = self.model(frame, verbose=False)
                 annotated_frame = results[0].plot()
             else:
@@ -323,7 +335,7 @@ class CameraManager:
             return False, str(e), None
     
     def start_recording(self, output_path=None):
-        """Start recording annotated video"""
+        """Start recording with YOLO detection enabled"""
         if not self.is_camera_active():
             return False, "Camera not active"
         
@@ -331,6 +343,13 @@ class CameraManager:
             return False, "Recording already in progress"
         
         try:
+            # Enable detection mode when recording starts
+            self.detection_enabled = True
+            
+            # Initialize log file for detection logging
+            if not self.remote_camera:
+                self._init_log_file()
+            
             # Generate filename if not provided
             if output_path is None:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -371,16 +390,16 @@ class CameraManager:
             
             self.is_recording = True
             self.recording_filename = str(output_path)
-            print(f"Started recording to: {output_path}")
+            print(f"Started recording with detection to: {output_path}")
             
-            return True, f"Recording started: {output_path.name}"
+            return True, f"Recording with detection started: {output_path.name}"
             
         except Exception as e:
             print(f"Error starting recording: {e}")
             return False, str(e)
     
     def stop_recording(self):
-        """Stop recording video"""
+        """Stop recording video and disable detection"""
         if not self.is_recording:
             return False, "No recording in progress"
         
@@ -389,12 +408,22 @@ class CameraManager:
                 self.video_writer.release()
                 self.video_writer = None
             
+            # Disable detection mode
+            self.detection_enabled = False
+            
+            # Close log file
+            if self.log_file:
+                self.log_file.close()
+                self.log_file = None
+                self.detection_buffer = []
+                self.last_logged_detection = None
+            
             filename = Path(self.recording_filename).name if self.recording_filename else "unknown"
             self.is_recording = False
             saved_filename = self.recording_filename
             self.recording_filename = None
             
-            print(f"Recording stopped and saved: {filename}")
+            print(f"Recording stopped, detection disabled: {filename}")
             return True, f"Recording saved: {filename}", saved_filename
             
         except Exception as e:
@@ -402,7 +431,7 @@ class CameraManager:
             return False, str(e), None
     
     def generate_frames(self):
-        """Generate frames with YOLO detection"""
+        """Generate frames - raw video by default, with YOLO when recording"""
         print("Starting frame generation...")
         failed_frames = 0
         max_failed_frames = 30
@@ -434,14 +463,14 @@ class CameraManager:
             failed_frames = 0
             
             try:
-                # Apply YOLO detection only for local cameras
-                if not self.remote_camera and self.model is not None:
+                # Apply YOLO detection only when detection is enabled (during recording)
+                if self.detection_enabled and not self.remote_camera and self.model is not None:
                     results = self.model(frame, verbose=False)
                     annotated_frame = results[0].plot()
                     # Log detection results if they are stable
                     self._log_detection(results)
                 else:
-                    # For remote cameras, use frame as-is (already annotated by remote server)
+                    # For raw video streaming or remote cameras, use frame as-is
                     annotated_frame = frame
                 
                 # Save frame to video if recording

@@ -16,13 +16,16 @@ def init_socketio(socketio_instance):
     global socketio
     socketio = socketio_instance
 
-@camera_bp.route('/api/start_camera', methods=['POST'])
-def start_camera():
-    """Start camera endpoint with optional source parameter"""
+@camera_bp.route('/api/change_camera_source', methods=['POST'])
+def change_camera_source():
+    """Change camera source (replaces start_camera since camera is always running)"""
     data = request.get_json() or {}
     source = data.get('source')
     
-    success, message = camera_manager.start_camera(source)
+    if not source:
+        return jsonify({'error': 'Source parameter is required'}), 400
+    
+    success, message = camera_manager.change_camera_source(source)
     
     if success:
         # Broadcast to all connected clients
@@ -42,7 +45,7 @@ def start_camera():
 
 @camera_bp.route('/api/stop_camera')
 def stop_camera():
-    """Stop camera endpoint"""
+    """Stop camera endpoint (mainly for shutdown or emergencies)"""
     success, message = camera_manager.stop_camera()
     
     if success:
@@ -67,18 +70,22 @@ def is_camera_active():
         return jsonify({ 
             "message": "Camera active", 
             "data": { 
-                "active": True 
+                "active": True,
+                "source": camera_manager.camera_source,
+                "detection_enabled": camera_manager.detection_enabled
         }})
     else:
         return jsonify({ 
             "message": "Camera inactive", 
             "data": {
-                "active": False 
+                "active": False,
+                "source": None,
+                "detection_enabled": False
         }})
 
 @camera_bp.route('/api/video_feed')
 def video_feed():
-    """Video feed endpoint"""
+    """Video feed endpoint - streams raw video by default, annotated when recording"""
     print("Video feed endpoint called")
     
     if not camera_manager.is_camera_active():
@@ -118,7 +125,7 @@ def take_snapshot():
 
 @camera_bp.route('/api/start_recording', methods=['POST'])
 def start_recording():
-    """Start recording annotated video"""
+    """Start recording with YOLO detection enabled"""
     data = request.get_json() or {}
     output_path = data.get('output_path')
     
@@ -129,6 +136,7 @@ def start_recording():
         if socketio:
             socketio.emit('recording_status', {
                 'recording': True,
+                'detection_enabled': True,
                 'message': message,
                 'source': camera_manager.camera_source
             })
@@ -137,6 +145,7 @@ def start_recording():
             'success': True,
             'message': message,
             'recording': True,
+            'detection_enabled': True,
             'source': camera_manager.camera_source
         })
     else:
@@ -147,7 +156,7 @@ def start_recording():
 
 @camera_bp.route('/api/stop_recording', methods=['POST'])
 def stop_recording():
-    """Stop recording video"""
+    """Stop recording and disable YOLO detection"""
     result = camera_manager.stop_recording()
     
     if len(result) == 3:  # success, message, filename
@@ -161,6 +170,7 @@ def stop_recording():
         if socketio:
             socketio.emit('recording_status', {
                 'recording': False,
+                'detection_enabled': False,
                 'message': message,
                 'filename': filename,
                 'source': camera_manager.camera_source
@@ -170,6 +180,7 @@ def stop_recording():
             'success': True,
             'message': message,
             'recording': False,
+            'detection_enabled': False,
             'filename': filename,
             'source': camera_manager.camera_source
         })
@@ -184,9 +195,21 @@ def recording_status():
     """Get current recording status"""
     return jsonify({
         'recording': camera_manager.is_recording,
+        'detection_enabled': camera_manager.detection_enabled,
         'filename': camera_manager.recording_filename,
         'camera_active': camera_manager.is_camera_active(),
         'source': camera_manager.camera_source
+    })
+
+@camera_bp.route('/api/camera_status', methods=['GET'])
+def camera_status():
+    """Get current camera status"""
+    return jsonify({
+        'active': camera_manager.is_camera_active(),
+        'source': camera_manager.camera_source,
+        'detection_enabled': camera_manager.detection_enabled,
+        'recording': camera_manager.is_recording,
+        'model_loaded': camera_manager.model is not None
     })
 
 @camera_bp.route('/api/debug')
@@ -195,6 +218,7 @@ def debug():
     return jsonify({
         'model_loaded': camera_manager.model is not None,
         'camera_active': camera_manager.is_camera_active(),
+        'detection_enabled': camera_manager.detection_enabled,
         'recording': camera_manager.is_recording,
         'recording_filename': camera_manager.recording_filename,
         'camera_source': camera_manager.camera_source,
@@ -208,10 +232,12 @@ def handle_connect(socketio_instance):
     # Send current state to newly connected client
     socketio_instance.emit('camera_status', {
         'active': camera_manager.is_camera_active(),
-        'source': camera_manager.camera_source
+        'source': camera_manager.camera_source,
+        'detection_enabled': camera_manager.detection_enabled
     })
     socketio_instance.emit('recording_status', {
         'recording': camera_manager.is_recording,
+        'detection_enabled': camera_manager.detection_enabled,
         'filename': camera_manager.recording_filename
     })
 
