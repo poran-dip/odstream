@@ -201,8 +201,8 @@ function ObjectDetectionPage() {
       // Don't set state here - let the socket event handle it
       console.log('Detection stop request sent');
     } catch (err) {
-      console.error('Stop detection error:', err);
-      setError('Failed to stop detection');
+      console.error('Stop camera error:', err);
+      setError('Failed to stop camera');
     } finally {
       setLoading(false);
     }
@@ -274,7 +274,7 @@ function ObjectDetectionPage() {
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <PageHeader 
-          title="YOLOv8 Detection System"
+          title="Real-Time Detection System"
           description="Real-time object detection powered by AI"
           rightActions={
             <>
@@ -334,13 +334,13 @@ function ObjectDetectionPage() {
           />
         }
 
-        {/* Stop Detection Confirmation Dialog */}
+        {/* Stop Camera Confirmation Dialog */}
         {showStopConfirmation && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-2xl p-6 w-[500px] max-w-[90vw]">
-              <h2 className="text-xl font-bold mb-4 text-slate-100">Stop Detection</h2>
+              <h2 className="text-xl font-bold mb-4 text-slate-100">Stop Camera</h2>
               <p className="text-slate-300 mb-6">
-                This will stop detection for <strong>EVERY computer</strong> connected to this network. Are you sure you want to proceed?
+                This will stop camera for <strong>EVERY computer</strong> connected to this network. Are you sure you want to proceed?
               </p>
               
               <div className="flex justify-end space-x-3">
@@ -354,7 +354,7 @@ function ObjectDetectionPage() {
                   onClick={confirmStopDetection}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
                 >
-                  Stop Detection
+                  Stop Camera
                 </button>
               </div>
             </div>
@@ -372,7 +372,7 @@ function ObjectDetectionPage() {
               <>
                 {isDetecting && (
                   <div className="bg-green-500/20 border border-green-500/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-green-400 animate-pulse">
-                    ● DETECTING
+                    ● RUNNING
                   </div>
                 )}
                 {isRecording && (
@@ -429,7 +429,7 @@ function ObjectDetectionPage() {
                   className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
                 >
                   <Play className="w-5 h-5" />
-                  <span>{loading ? 'Starting...' : 'Start Detection'}</span>
+                  <span>{loading ? 'Starting...' : 'Start Camera'}</span>
                 </button>
                 
                 <button
@@ -438,7 +438,7 @@ function ObjectDetectionPage() {
                   className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
                 >
                   <Square className="w-5 h-5" />
-                  <span>{loading ? 'Stopping...' : 'Stop Detection'}</span>
+                  <span>{loading ? 'Stopping...' : 'Stop Camera'}</span>
                 </button>
               </div>
             </div>
@@ -568,7 +568,7 @@ function ObjectDetectionPage() {
                         className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
                       />
                       <label htmlFor="annotateYOLO" className="text-sm text-slate-300">
-                        Enable YOLOv8 Annotations
+                        Enable YOLO Annotations
                       </label>
                     </div>
                   </div>

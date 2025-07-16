@@ -1,4 +1,6 @@
+import os
 from pathlib import Path
+import re
 
 # File System Configuration
 VIDEO_EXTENSIONS = {'.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm', '.m4v', '.3gp', '.ogv'}
@@ -6,7 +8,34 @@ DEFAULT_VIDEO_PATH = Path(__file__).resolve().parent.parent / 'shared' / 'record
 DEFAULT_SNAPS_PATH = Path(__file__).resolve().parent.parent / 'shared' / 'screenshots'
 DEFAULT_LOG_PATH = Path(__file__).resolve().parent.parent / 'shared' / 'detections'
 
-API_BASE_URL = "http://localhost:5000/api"
+def read_api_url_from_runtime_env():
+    """Read API_URL from the runtime-env.ts file"""
+    # Navigate from backend to uwod-rc/shared/runtime-env.ts
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)  # Go up from backend to uwod-rc
+    runtime_env_path = os.path.join(parent_dir, "shared", "runtime-env.ts")
+    
+    try:
+        with open(runtime_env_path, 'r') as file:
+            content = file.read()
+            
+        # Extract API_URL using regex
+        pattern = r'export const API_URL = "([^"]+)"'
+        match = re.search(pattern, content)
+        
+        if match:
+            return match.group(1)
+        else:
+            raise ValueError("API_URL not found in runtime-env.ts")
+            
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Runtime environment file not found at {runtime_env_path}")
+    except Exception as e:
+        raise Exception(f"Error reading API_URL from runtime-env.ts: {str(e)}")
+
+# Read API_URL from the TypeScript file
+API_URL = read_api_url_from_runtime_env()
+API_BASE_URL = f"{API_URL}:5000/api"
 JETSON_API_BASE_URL = "http://jetson-nano.local:5000/api"
 
 DEFAULT_SOURCES = [

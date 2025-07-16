@@ -3,7 +3,7 @@ import requests
 import threading
 import time
 from ultralytics import YOLO
-from config import Config
+from config import Config, API_URL
 from datetime import datetime
 from pathlib import Path
 import numpy as np
@@ -193,7 +193,7 @@ class CameraManager:
             
             source_url = self.camera_source.get('url')
             self.remote_camera = source_url is not None and not any(
-                host in source_url.lower() for host in ['localhost', '127.0.0.1', '192.168.29.203', '10.150.22.122']
+                host in source_url.lower() for host in ['localhost', '127.0.0.1', f"{API_URL}"]
             )
             
             # Load model for local cameras (needed for detection mode)
