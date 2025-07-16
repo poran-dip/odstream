@@ -16,6 +16,30 @@ def init_socketio(socketio_instance):
     global socketio
     socketio = socketio_instance
 
+@camera_bp.route('/api/start_camera', methods=['POST'])
+def start_camera():
+    """Start camera with optional source parameter"""
+    data = request.get_json() or {}
+    source = data.get('source')
+    
+    success, message = camera_manager.start_camera(source)
+    
+    if success:
+        # Broadcast to all connected clients
+        if socketio:
+            socketio.emit('camera_status', {
+                'active': True,
+                'source': camera_manager.camera_source,
+                'message': message
+            })
+        
+        return jsonify({
+            'message': message,
+            'source': camera_manager.camera_source
+        })
+    else:
+        return jsonify({'error': message}), 500
+
 @camera_bp.route('/api/change_camera_source', methods=['POST'])
 def change_camera_source():
     """Change camera source (replaces start_camera since camera is always running)"""
