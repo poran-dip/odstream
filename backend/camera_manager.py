@@ -7,6 +7,7 @@ from config import Config, API_URL
 from datetime import datetime
 from pathlib import Path
 import numpy as np
+import torch
 
 class CameraManager:
     def __init__(self):
@@ -35,7 +36,7 @@ class CameraManager:
         """Load YOLO model"""
         try:
             print("Loading YOLOv8 model...")
-            self.model = YOLO(Config.YOLO_MODEL_PATH)
+            self.model = torch.load('yolov5_underwater.pt')
             print("Model loaded successfully!")
             return True
         except Exception as e:
