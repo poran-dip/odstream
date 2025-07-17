@@ -2,7 +2,6 @@ import cv2
 import requests
 import threading
 import time
-from ultralytics import YOLO
 from config import Config, API_URL
 from datetime import datetime
 from pathlib import Path
