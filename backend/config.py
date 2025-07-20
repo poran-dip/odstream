@@ -58,10 +58,13 @@ class Config:
     DEFAULT_LOG_PATH = DEFAULT_LOG_PATH
     
     # Camera configuration
+    # 0 for webcam
+    CAMERA_INDEX = 0
     CAMERA_WIDTH = 640
     CAMERA_HEIGHT = 480
     CAMERA_FPS = 30
     
     # YOLO configuration
-    YOLO_MODEL_PATH = 'yolov8n.pt'
+    CUSTOM_MODEL = False
+    YOLO_MODEL_PATH = 'models/yolov5nu.pt'
     JPEG_QUALITY = 80

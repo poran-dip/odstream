@@ -13,7 +13,10 @@ __pycache__/
 venv/
 .env
 
-# YOLO model
+# H.264 codec binary
+openh264*.dll
+
+# YOLO models
 *.pt
 
 # Recordings

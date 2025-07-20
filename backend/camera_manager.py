@@ -2,11 +2,11 @@ import cv2
 import requests
 import threading
 import time
+
 from config import Config, API_URL
 from datetime import datetime
 from pathlib import Path
 import numpy as np
-import torch
 
 class CameraManager:
     def __init__(self):
@@ -34,8 +34,27 @@ class CameraManager:
     def load_model(self):
         """Load YOLO model"""
         try:
-            print("Loading YOLOv8 model...")
-            self.model = torch.load('yolov5_underwater.pt')
+            print(f"Loading YOLO model from {Config.YOLO_MODEL_PATH}")
+
+            if not Config.CUSTOM_MODEL:
+                from ultralytics import YOLO
+                self.model = YOLO(Config.YOLO_MODEL_PATH)
+            else:
+                import torch
+                checkpoint = torch.load(Config.YOLO_MODEL_PATH, map_location='cpu')
+    
+                if hasattr(checkpoint, 'model'):
+                    self.model = checkpoint.model
+                elif 'model' in checkpoint:
+                    self.model = checkpoint['model']
+                elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
+                    raise NotImplementedError("State dict loading requires model architecture definition")
+                else:
+                    self.model = checkpoint
+                
+                if hasattr(self.model, 'eval'):
+                    self.model.eval()
+            
             print("Model loaded successfully!")
             return True
         except Exception as e:
@@ -208,7 +227,7 @@ class CameraManager:
                 return success, message
             
             # Handle local camera
-            self.camera = cv2.VideoCapture(0)
+            self.camera = cv2.VideoCapture(Config.CAMERA_INDEX)
             
             if not self.camera.isOpened():
                 print("Failed to open camera")

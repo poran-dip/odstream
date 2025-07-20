@@ -1,4 +1,6 @@
-## Project Setup Instructions (Vite + Flask)
+# Project Setup Instructions (Vite + Flask)
+
+## Setting up for the first time
 
 ### Cloning the Repository
 
@@ -59,7 +61,13 @@ venv\Scripts\activate # or source venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
 ```
 
-9. Run the Flask backend:
+8. Install additional binaries:
+
+```bash
+python setup.py
+```
+
+10. Run the Flask backend:
 
 ```bash
 python app.py
@@ -67,7 +75,26 @@ python app.py
 
 Ensure the Flask server runs on the expected port (typically 5000) and is accessible to the frontend.
 
+Close the servers by killing the terminals or by pressing `Ctrl + C`.
+
 ---
+
+## Running after initial set up
+
+### Frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+### Backend
+
+```bash
+cd backend
+venv\Scripts\activate
+python app.py
+```
 
 ## Uploading Changes to GitHub
 
