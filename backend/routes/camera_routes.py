@@ -24,6 +24,25 @@ def start_camera():
     
     success, message = camera_manager.start_camera(source)
     
+    # If source is provided, validate it
+    if source:
+        source_type = source.get('type')
+        if not source_type:
+            return jsonify({'error': 'Source type is required'}), 400
+        
+        if source_type == 'local':
+            if 'index' not in source:
+                return jsonify({'error': 'Camera index is required for local sources'}), 400
+            if not isinstance(source['index'], int) or source['index'] < 0:
+                return jsonify({'error': 'Camera index must be a non-negative integer'}), 400
+        elif source_type == 'remote':
+            if 'url' not in source:
+                return jsonify({'error': 'URL is required for remote sources'}), 400
+            if not source['url'].startswith(('http://', 'https://')):
+                return jsonify({'error': 'URL must be a valid HTTP/HTTPS URL'}), 400
+        else:
+            return jsonify({'error': 'Source type must be either "local" or "remote"'}), 400
+    
     if success:
         # Broadcast to all connected clients
         if socketio:
@@ -49,6 +68,24 @@ def change_camera_source():
     if not source:
         return jsonify({'error': 'Source parameter is required'}), 400
     
+    # Validate source structure based on type
+    source_type = source.get('type')
+    if not source_type:
+        return jsonify({'error': 'Source type is required'}), 400
+    
+    if source_type == 'local':
+        if 'index' not in source:
+            return jsonify({'error': 'Camera index is required for local sources'}), 400
+        if not isinstance(source['index'], int) or source['index'] < 0:
+            return jsonify({'error': 'Camera index must be a non-negative integer'}), 400
+    elif source_type == 'remote':
+        if 'url' not in source:
+            return jsonify({'error': 'URL is required for remote sources'}), 400
+        if not source['url'].startswith(('http://', 'https://')):
+            return jsonify({'error': 'URL must be a valid HTTP/HTTPS URL'}), 400
+    else:
+        return jsonify({'error': 'Source type must be either "local" or "remote"'}), 400
+    
     success, message = camera_manager.change_camera_source(source)
     
     if success:
@@ -61,11 +98,12 @@ def change_camera_source():
             })
         
         return jsonify({
+            'success': True,
             'message': message,
             'source': camera_manager.camera_source
         })
     else:
-        return jsonify({'error': message}), 500
+        return jsonify({'success': False, 'error': message}), 500
 
 @camera_bp.route('/api/stop_camera')
 def stop_camera():

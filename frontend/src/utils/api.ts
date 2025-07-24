@@ -42,6 +42,36 @@ export const detectionApi = {
     return response.json();
   },
 
+  getCameraStatus: async (): Promise<{ 
+    active: boolean; 
+    source?: any; 
+    detection_enabled?: boolean; 
+    recording?: boolean; 
+    model_loaded?: boolean; 
+    error?: string 
+  }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/camera_status`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Get camera status error:', error);
+      return { active: false, error: 'Failed to get camera status' };
+    }
+  },
+
+  changeSource: async (source: CameraSource): Promise<ApiResponse> => {
+    const res = await fetch(`${API_BASE_URL}/change_camera_source`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source }),
+    });
+    return res.json();
+  },
+
   startRecording: async (outputPath?: string): Promise<ApiResponse> => {
     const response = await fetch(`${API_BASE_URL}/start_recording`, {
       method: 'POST',

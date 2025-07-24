@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Folder, Play, Trash2, Edit2, Check, X, RefreshCw, Settings } from 'lucide-react';
-import ErrorDisplay from '../components/ui/ErrorDisplay';
+import ToastDisplay from '../components/ui/ToastDisplay';
 import PageHeader from '../components/PageHeader';
 import VideoContainer from '../components/VideoContainer';
 import { formatDate, formatFileSize } from '../utils/formatters';
@@ -201,8 +201,9 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
         />
 
         {error &&
-          <ErrorDisplay 
-            error={error} 
+          <ToastDisplay 
+            message={error} 
+            type='error'
             onClose={() => setError('')}
           />
         }

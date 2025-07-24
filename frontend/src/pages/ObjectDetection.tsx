@@ -2,27 +2,13 @@ import { io, Socket } from 'socket.io-client';
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Settings, Play, Square, Folder, Camera, ChevronDown, Plus, Trash2 } from 'lucide-react'
-import ErrorDisplay from '../components/ui/ErrorDisplay'
+import ToastDisplay from '../components/ui/ToastDisplay'
 import PageHeader from '../components/PageHeader';
 import VideoContainer from '../components/VideoContainer';
 import { formatElapsedTime } from '../utils/formatters';
 import { detectionApi } from '../utils/api';
-import { settingsStorage, storageUtils } from '../utils/storage';
+import { settingsStorage, storageUtils, type CameraSource, type VideoSettings } from '../utils/storage';
 import { API_BASE_URL, DEFAULT_SOURCES } from '../utils/config';
-{/*import ControlsPanel from '../components/ControlsPanel';*/}
-
-interface Settings {
-  brightness: number;
-  contrast: number;
-  saturation: number;
-  annotateYOLO: boolean;
-}
-
-interface CameraSource {
-  id: string;
-  name: string;
-  url: string;
-}
 
 function ObjectDetectionPage() {
   const [socket, setSocket] = useState<Socket | null>(null)
@@ -32,21 +18,93 @@ function ObjectDetectionPage() {
   const [showSettings, setShowSettings] = useState<boolean>(false)
   const [isRecording, setIsRecording] = useState<boolean>(false)
   const [showSourceDropdown, setShowSourceDropdown] = useState<boolean>(false)
-  const [selectedSource, setSelectedSource] = useState<CameraSource>(DEFAULT_SOURCES[0])
+  const [selectedSource, setSelectedSource] = useState<CameraSource | null>(null);
+  const [isLoadingSource, setIsLoadingSource] = useState<boolean>(true);
   const [customSources, setCustomSources] = useState<CameraSource[]>([])
   const [newSourceName, setNewSourceName] = useState<string>('')
   const [newSourceUrl, setNewSourceUrl] = useState<string>('')
-  const [settings, setSettings] = useState<Settings>(() => settingsStorage.getSettings());
+  const [settings, setSettings] = useState<VideoSettings>(() => settingsStorage.getSettings());
   const [detectionStartTime, setDetectionStartTime] = useState(Number);
   const [showStopConfirmation, setShowStopConfirmation] = useState<boolean>(false);
   
   const imgRef = useRef<HTMLImageElement>(null)
   const navigate = useNavigate()
 
-  // Load custom sources from storage on component mount
+  const findMatchingSource = (backendSource: any, availableSources: CameraSource[]): CameraSource | null => {
+    return availableSources.find(src => {
+      if (src.type === 'local' && backendSource.type === 'local') {
+        return src.index === backendSource.index;
+      }
+      if (src.type === 'remote' && backendSource.type === 'remote') {
+        return src.url === backendSource.url;
+      }
+      return false;
+    }) || null;
+  };
+
+  // Load current source from backend on component mount
   useEffect(() => {
-    setCustomSources(storageUtils.getCustomSources())
-  }, [])
+    const loadCurrentSource = async () => {
+      setIsLoadingSource(true);
+      try {
+        // First load custom sources so we have the complete list
+        const loadedCustomSources = storageUtils.getCustomSources();
+        setCustomSources(loadedCustomSources);
+        
+        const response = await detectionApi.getCameraStatus();
+        
+        if (response.source) {
+          // Find matching source from all available sources (including newly loaded custom ones)
+          const allSources = [...DEFAULT_SOURCES, ...loadedCustomSources];
+          const matchedSource = findMatchingSource(response.source, allSources);
+
+          if (matchedSource) {
+            console.log('Loaded current source from backend:', matchedSource);
+            setSelectedSource(matchedSource);
+          } else {
+            console.warn('Backend source not found in available sources:', response.source);
+            console.log('Available sources:', allSources);
+            
+            // Create a temporary source object if it's not in our predefined list
+            // This handles cases where backend has a source not in our DEFAULT_SOURCES
+            const tempSource: CameraSource = response.source.type === 'local' 
+              ? {
+                  id: `temp-local-${response.source.index}`,
+                  name: `Camera ${response.source.index}`,
+                  type: 'local',
+                  index: response.source.index
+                }
+              : {
+                  id: `temp-remote-${Date.now()}`,
+                  name: 'Remote Camera',
+                  type: 'remote',
+                  url: response.source.url
+                };
+            
+            console.log('Using temporary source:', tempSource);
+            setSelectedSource(tempSource);
+          }
+          
+          // Also set initial states from the camera status
+          setIsDetecting(response.active || false);
+          setIsRecording(response.recording || false);
+          if (response.active) {
+            setDetectionStartTime(Date.now());
+          }
+        } else {
+          console.warn('No source in camera status response, using default');
+          setSelectedSource(DEFAULT_SOURCES[0]);
+        }
+      } catch (error) {
+        console.error('Error loading camera status:', error);
+        setSelectedSource(DEFAULT_SOURCES[0]);
+      } finally {
+        setIsLoadingSource(false);
+      }
+    };
+
+    loadCurrentSource();
+  }, []);
 
   const getAllSources = (): CameraSource[] => {
     return [...DEFAULT_SOURCES, ...customSources]
@@ -65,7 +123,7 @@ function ObjectDetectionPage() {
     storageUtils.removeCustomSource(id)
     setCustomSources(prev => prev.filter(source => source.id !== id))
     // If the deleted source was selected, switch to webcam
-    if (selectedSource.id === id) {
+    if (selectedSource?.id === id) {
       setSelectedSource(DEFAULT_SOURCES[0])
     }
   }
@@ -76,6 +134,8 @@ function ObjectDetectionPage() {
   }, [settings]);
 
   useEffect(() => {
+    if (isLoadingSource || !selectedSource) return;
+
     const newSocket = io(API_BASE_URL.replace('/api', ''));
     setSocket(newSocket);
 
@@ -90,38 +150,62 @@ function ObjectDetectionPage() {
     newSocket.on('camera_status', (data) => {
       console.log('Camera status update:', data);
       
+      // Find matching source from all available sources
+      const allSources = [...DEFAULT_SOURCES, ...customSources];
+      const matchedSource = findMatchingSource(data.source, allSources);
+
+      if (matchedSource && matchedSource.id !== selectedSource?.id) {
+        console.log('Backend source changed, updating frontend to match:', matchedSource);
+        setSelectedSource(matchedSource);
+      } else if (!matchedSource && data.source) {
+        // Handle case where backend source is not in our predefined sources
+        console.log('Backend using unknown source, creating temporary source:', data.source);
+        
+        const tempSource: CameraSource = data.source.type === 'local' 
+          ? {
+              id: `temp-local-${data.source.index}`,
+              name: `Camera ${data.source.index}`,
+              type: 'local',
+              index: data.source.index
+            }
+          : {
+              id: `temp-remote-${Date.now()}`,
+              name: 'Remote Camera',
+              type: 'remote',
+              url: data.source.url
+            };
+        
+        setSelectedSource(tempSource);
+      }
+
       if (data.active) {
         setIsDetecting(true);
         setDetectionStartTime(Date.now());
         
-        console.log("Camera active logged")
+        console.log("Camera active logged");
         
         setTimeout(() => {
           if (imgRef.current) {
-            const videoUrl = data.source?.url;
+            const videoUrl = `${API_BASE_URL}/video_feed`;
             
-            if (videoUrl) {
-              console.log("Setting up MJPEG stream:", videoUrl);
+            console.log("Setting up MJPEG stream:", videoUrl);
+            
+            imgRef.current.src = videoUrl;
+            
+            imgRef.current.onload = () => {
+              console.log('MJPEG stream connected successfully');
+            };
+            
+            imgRef.current.onerror = (e) => {
+              console.error('MJPEG stream error:', e);
               
-              // For MJPEG streams, set the src ONCE and let the stream handle updates
-              imgRef.current.src = videoUrl;
-              
-              imgRef.current.onload = () => {
-                console.log('MJPEG stream connected successfully');
-              };
-              
-              imgRef.current.onerror = (e) => {
-                console.error('MJPEG stream error:', e);
-                
-                // Retry once after a delay
-                setTimeout(() => {
-                  if (imgRef.current && isDetecting) {
-                    console.log("Retrying MJPEG stream connection...");
-                    imgRef.current.src = videoUrl;
-                  }
-                }, 2000);
-              };
-            }
+              setTimeout(() => {
+                if (imgRef.current && isDetecting) {
+                  console.log("Retrying MJPEG stream connection...");
+                  imgRef.current.src = videoUrl;
+                }
+              }, 2000);
+            };
           }
         }, 100);
       } else {
@@ -137,41 +221,19 @@ function ObjectDetectionPage() {
       setIsRecording(data.recording);
     });
 
-    // Clean up on unmount
     return () => {
       newSocket.disconnect();
     };
-  }, []);
-
-  useEffect(() => {
-    const checkCameraStatus = async () => {
-      try {
-        const response = await detectionApi.isCameraActive();
-        if (response.data.active) {
-          setIsDetecting(true);
-          setDetectionStartTime(Date.now());
-          
-          if (imgRef.current) {
-            imgRef.current.src = selectedSource.url;
-            imgRef.current.onload = () => console.log('Video stream loaded on mount');
-            imgRef.current.onerror = (e) => {
-              console.error('Video stream error:', e);
-              setError('Failed to load video stream');
-            };
-          }
-        }
-      } catch (err) {
-        console.error("Failed to check camera status:", err);
-      }
-    };
-
-    // Only check on mount - socket will handle updates after that
-    checkCameraStatus();
-  }, []);
+  }, [customSources, selectedSource, isLoadingSource]);
 
   const startDetection = async () => {
     setLoading(true);
     
+    if (!selectedSource) {
+      setError('Unable to start detection: No source was provided');
+      return;
+    }
+
     try {
       const response = await detectionApi.startCamera(selectedSource);
       
@@ -236,7 +298,6 @@ function ObjectDetectionPage() {
       const response = await detectionApi.stopRecording();
       
       if (response.success) {
-        // Don't set state here - let the socket event handle it
         console.log('Recording stop request sent');
       } else {
         setError(response.error || "Failed to stop recording");
@@ -269,6 +330,58 @@ function ObjectDetectionPage() {
     }
   };
   
+  useEffect(() => {
+    // Don't run if we're still loading the initial source or source is null
+    if (isLoadingSource || !selectedSource) return;
+
+    let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    const changeCameraSource = async (source: CameraSource): Promise<void> => {
+      setLoading(true);
+      try {
+        const response = await detectionApi.changeSource(source);
+
+        if (response.success) {
+          console.log(response.message ?? 'Camera source changed');
+          setError('');
+
+          timeout = setTimeout(() => {
+            if (!cancelled) setIsDetecting(true);
+          }, 100);
+        } else {
+          console.error(response.error ?? response.message)
+          setError(`Failed to change source to ${source.name}`);
+        }
+      } catch (err) {
+        console.error('Change camera source error:', err);
+        setError('Failed to connect to backend');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Always allow hot-swapping, backend handles stop/start internally
+    changeCameraSource(selectedSource);
+
+    return () => {
+      cancelled = true;
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [selectedSource, isLoadingSource]);
+
+  // Show loading state while fetching current source
+  if (isLoadingSource || !selectedSource) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-slate-300">Loading camera settings...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
       <div className="max-w-7xl mx-auto p-6">
@@ -282,16 +395,19 @@ function ObjectDetectionPage() {
               <div className="relative">
                 <button
                   onClick={() => setShowSourceDropdown(!showSourceDropdown)}
-                  className="w-64 bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105 flex items-center justify-between"
+                  disabled={isLoadingSource}
+                  className="w-64 bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <div className="flex items-center space-x-2 truncate">
                     <Camera className="w-5 h-5 text-slate-300 flex-shrink-0" />
-                    <span className="text-sm text-slate-300 truncate">{selectedSource.name}</span>
+                    <span className="text-sm text-slate-300 truncate">
+                      {isLoadingSource ? 'Loading...' : selectedSource?.name || 'Unknown'}
+                    </span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
                 </button>
                 
-                {showSourceDropdown && (
+                {showSourceDropdown && !isLoadingSource && (
                   <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-xl shadow-xl z-10">
                     {getAllSources().map((source) => (
                       <button
@@ -301,7 +417,7 @@ function ObjectDetectionPage() {
                           setShowSourceDropdown(false)
                         }}
                         className={`w-full text-left px-4 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-slate-700/50 ${
-                          selectedSource.id === source.id ? 'bg-blue-600/20 text-blue-300' : 'text-slate-300'
+                          selectedSource?.id === source.id ? 'bg-blue-600/20 text-blue-300' : 'text-slate-300'
                         }`}
                       >
                         {source.name}
@@ -328,8 +444,9 @@ function ObjectDetectionPage() {
         />
 
         {error &&
-          <ErrorDisplay 
-            error={error} 
+          <ToastDisplay 
+            message={error} 
+            type='error'
             onClose={() => setError('')}
           />
         }
@@ -407,16 +524,6 @@ function ObjectDetectionPage() {
           </VideoContainer>
 
           {/* Controls Panel */}
-          {/*<ControlsPanel 
-            isDetecting = {isDetecting}
-            isRecording = {isRecording}
-            loading={loading}
-            onStartDetection={startDetection}
-            onStopDetection={stopDetection}
-            onStartRecording={handleStartRecording}
-            onStopRecording={handleStopRecording}
-            onTakeSnapshot={handleTakeSnapshot}
-          />*/}
           <div className="space-y-4">
             {/* Detection Controls */}
             <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl p-6">
@@ -498,12 +605,6 @@ function ObjectDetectionPage() {
                   <span className="text-slate-400">Source</span>
                   <span className="font-semibold text-blue-400">{selectedSource.name}</span>
                 </div>
-                {/*
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Recordings</span>
-                  <span className="font-semibold text-blue-400">{recordings.length}</span>
-                </div>
-                */}
               </div>
             </div>
           </div>
@@ -616,9 +717,11 @@ function ObjectDetectionPage() {
                       <div key={source.id} className="bg-slate-700/20 rounded-lg p-3 flex items-center justify-between">
                         <div>
                           <div className="font-medium text-slate-200">{source.name}</div>
-                          <div className="text-xs text-slate-400 truncate">{source.url}</div>
+                          <div className="text-xs text-slate-400 truncate">
+                            {source.type === 'local' ? `Device ${source.index}` : source.url}
+                          </div>
                         </div>
-                        <div className="text-xs text-slate-500">Default</div>
+                        <div className="text-xs text-slate-500 capitalize">{source.type}</div>
                       </div>
                     ))}
                     
@@ -627,14 +730,19 @@ function ObjectDetectionPage() {
                       <div key={source.id} className="bg-slate-700/20 rounded-lg p-3 flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-slate-200">{source.name}</div>
-                          <div className="text-xs text-slate-400 truncate">{source.url}</div>
+                          <div className="text-xs text-slate-400 truncate">
+                            {source.type === 'local' ? `Device ${source.index}` : source.url}
+                          </div>
                         </div>
-                        <button
-                          onClick={() => deleteCustomSource(source.id)}
-                          className="ml-2 text-red-400 hover:text-red-300 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-slate-500 capitalize">{source.type}</div>
+                          <button
+                            onClick={() => deleteCustomSource(source.id)}
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                     

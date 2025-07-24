@@ -3,7 +3,7 @@ import requests
 import threading
 import time
 
-from config import Config, API_URL
+from config import Config
 from datetime import datetime
 from pathlib import Path
 import numpy as np
@@ -208,12 +208,9 @@ class CameraManager:
             if source:
                 self.camera_source = source
             else:
-                self.camera_source = {"id": "local", "name": "Local Camera", "url": None}
+                self.camera_source = {"type": "local", "name": "Webcam", "index": 0}
             
-            source_url = self.camera_source.get('url')
-            self.remote_camera = source_url is not None and not any(
-                host in source_url.lower() for host in ['localhost', '127.0.0.1', f"{API_URL}"]
-            )
+            self.remote_camera = self.camera_source.get('type') == 'remote'
             
             # Load model for local cameras (needed for detection mode)
             if not self.remote_camera:
@@ -226,20 +223,21 @@ class CameraManager:
                 success, message = self._start_remote_detection()
                 return success, message
             
-            # Handle local camera
-            self.camera = cv2.VideoCapture(Config.CAMERA_INDEX)
+            # Handle local camera - use index from source
+            camera_index = self.camera_source.get('index', 0)
+            self.camera = cv2.VideoCapture(camera_index)
             
             if not self.camera.isOpened():
-                print("Failed to open camera")
-                return False, "Failed to open camera"
-            
+                print(f"Failed to open camera at index {camera_index}")
+                return False, f"Failed to open camera at index {camera_index}"
+
             # Set camera properties
             self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, Config.CAMERA_WIDTH)
             self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, Config.CAMERA_HEIGHT)
             self.camera.set(cv2.CAP_PROP_FPS, Config.CAMERA_FPS)
             
-            print("Camera started successfully")
-            return True, "Camera started successfully"
+            print(f"Camera started successfully at index {camera_index}")
+            return True, f"Camera started successfully at index {camera_index}"
             
         except Exception as e:
             print(f"Error starting camera: {e}")

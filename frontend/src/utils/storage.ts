@@ -1,8 +1,22 @@
-export interface CameraSource {
-  id: string;
-  name: string;
-  url: string;
+export type CameraType = 'local' | 'remote'
+
+export interface BaseCamera {
+  id: string
+  name: string
+  type: CameraType
 }
+
+export interface LocalCamera extends BaseCamera {
+  type: 'local'
+  index: number
+}
+
+export interface RemoteCamera extends BaseCamera {
+  type: 'remote'
+  url: string
+}
+
+export type CameraSource = LocalCamera | RemoteCamera
 
 const CUSTOM_SOURCES_KEY = 'customCameraSources';
 
@@ -25,10 +39,11 @@ export const storageUtils = {
     }
   },
 
-  addCustomSource: (name: string, url: string): CameraSource => {
-    const newSource: CameraSource = {
+  addCustomSource: (name: string, url: string): RemoteCamera => {
+    const newSource: RemoteCamera = {
       id: Date.now().toString(),
       name: name.trim(),
+      type: 'remote',
       url: url.trim()
     };
     
@@ -46,7 +61,7 @@ export const storageUtils = {
   }
 };
 
-export interface Settings {
+export interface VideoSettings {
   brightness: number;
   contrast: number;
   saturation: number;
@@ -55,7 +70,7 @@ export interface Settings {
 
 const SETTINGS_KEY = 'userSettings';
 
-export const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS: VideoSettings = {
   brightness: 50,
   contrast: 50,
   saturation: 50,
@@ -63,7 +78,7 @@ export const DEFAULT_SETTINGS = {
 };
 
 export const settingsStorage = {
-  getSettings: (): Settings => {
+  getSettings: (): VideoSettings => {
     try {
       const saved = localStorage.getItem(SETTINGS_KEY);
       return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
@@ -73,7 +88,7 @@ export const settingsStorage = {
     }
   },
 
-  saveSettings: (settings: Settings): void => {
+  saveSettings: (settings: VideoSettings): void => {
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch (err) {

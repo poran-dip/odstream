@@ -1,14 +1,16 @@
-// NOTE: This component is currently NOT in use.
-// It's intended for production-level deployments where:
-// - File access needs to be secured
-// - Users should NOT be able to rename/delete each other's videos
-// - The backend is exposed beyond a trusted local network
-//
-// For now, the system intentionally allows full local network access
-// to simplify collaboration/testing on the same Wi-Fi.
-// 
-// If going public or multi-user with real data:
-// Enable this component and lock down file APIs with proper auth.
+{/*
+  NOTE: This component is currently NOT in use.
+  It's intended for production-level deployments where:
+  - File access needs to be secured
+  - Users should NOT be able to rename/delete each other's videos
+  - The backend is exposed beyond a trusted local network
+
+  For now, the system intentionally allows full local network access
+  to simplify collaboration/testing on the same Wi-Fi.
+
+  If going public or multi-user with real data:
+  Enable this component and lock down file APIs with proper auth.
+*/}
 
 import React, { useState, useRef } from 'react';
 import { ArrowLeft, Folder, Play, Trash2, Edit2, FolderOpen, Check, X, Zap, Camera } from 'lucide-react';
