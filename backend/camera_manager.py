@@ -217,9 +217,7 @@ class CameraManager:
     def _start_remote_detection(self):
         """Start detection on remote camera source"""
         try:
-            print(f"Starting remote detection for URL: {self.camera_source['url']}")
             base_url = self._get_base_url(self.camera_source['url'])
-            print(f"Base URL: {base_url}")
         
             # Check if remote camera is already active
             try:
@@ -230,15 +228,14 @@ class CameraManager:
                         print("Remote camera already active")
                         # Still need to start the stream worker if not running
                         if not self.remote_stream_active:
-                            print("Starting stream worker...")
                             self.remote_stream_active = True
                             self.remote_stream_thread = threading.Thread(target=self._remote_stream_worker)
                             self.remote_stream_thread.daemon = True
                             self.remote_stream_thread.start()
                         return True, "Remote camera already active"
             except Exception as e:
-                print(f"Status check failed (continuing anyway): {e}")
                 # If status check fails, proceed with start_camera
+                pass
 
             # Try to start camera via API
             try:
@@ -250,18 +247,10 @@ class CameraManager:
                 # Continue anyway - we'll try to connect directly to the stream
             
             # Start the remote stream worker thread regardless of API success
-            print("Starting remote stream worker...")
             self.remote_stream_active = True
             self.remote_stream_thread = threading.Thread(target=self._remote_stream_worker)
             self.remote_stream_thread.daemon = True
             self.remote_stream_thread.start()
-            
-            # Wait a moment to see if connection establishes
-            import time
-            time.sleep(1)
-            
-            print(f"Remote stream active: {self.remote_stream_active}")
-            print(f"Remote thread alive: {self.remote_stream_thread.is_alive() if self.remote_stream_thread else False}")
             
             return True, "Remote camera connection established"
             
@@ -307,21 +296,14 @@ class CameraManager:
             else:
                 self.camera_source = {"type": "local", "name": "Webcam", "index": 0}
             
-            print(f"Camera source set to: {self.camera_source}")
             self.remote_camera = self.camera_source.get('type') == 'remote'
-            print(f"Remote camera flag: {self.remote_camera}")
             
             # Handle remote source
             if self.remote_camera:
-                print("Handling remote camera...")
                 success, message = self._start_remote_detection()
-                print(f"Remote detection result: success={success}, message={message}")
-                if success:
-                    print("Remote camera setup successful")
                 return success, message
             
             # Handle local camera - only if NOT remote
-            print("Handling local camera...")
             # Load model for local cameras (needed for detection mode)
             if self.model is None:
                 if not self.load_model():
@@ -433,13 +415,8 @@ class CameraManager:
     def is_camera_active(self):
         """Check if camera is active"""
         if self.remote_camera:
-            active = self.remote_stream_active
-            print(f"Remote camera active check: {active}")
-            return active
-        else:
-            active = self.camera is not None and self.camera.isOpened() if self.camera else False
-            print(f"Local camera active check: {active}")
-            return active
+            return self.remote_stream_active
+        return self.camera is not None and self.camera.isOpened() if self.camera else False
         
     def _get_current_frame(self):
         """Get current frame from active source"""
