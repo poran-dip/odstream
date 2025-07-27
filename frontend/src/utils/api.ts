@@ -21,20 +21,59 @@ export interface StopRecordingResponse {
   message?: string;
 }
 
+// Request queue management
+class RequestQueue {
+  private queue: Array<() => Promise<any>> = [];
+  private processing = false;
+
+  async add<T>(request: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const result = await request();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      this.process();
+    });
+  }
+
+  private async process() {
+    if (this.processing || this.queue.length === 0) return;
+    
+    this.processing = true;
+    while (this.queue.length > 0) {
+      const request = this.queue.shift()!;
+      await request();
+    }
+    this.processing = false;
+  }
+}
+
+const cameraQueue = new RequestQueue();
+const recordingQueue = new RequestQueue();
+const videoQueue = new RequestQueue();
+
 // Detection API
 export const detectionApi = {
   startCamera: async (source: CameraSource): Promise<ApiResponse> => {
-    const response = await fetch(`${API_BASE_URL}/start_camera`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source })
+    return cameraQueue.add(async () => {
+      const response = await fetch(`${API_BASE_URL}/start_camera`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source })
+      });
+      return response.json();
     });
-    return response.json();
   },
 
   stopCamera: async (): Promise<ApiResponse> => {
-    const response = await fetch(`${API_BASE_URL}/stop_camera`);
-    return response.json();
+    return cameraQueue.add(async () => {
+      const response = await fetch(`${API_BASE_URL}/stop_camera`);
+      return response.json();
+    });
   },
 
   isCameraActive: async (): Promise<ApiResponse> => {
@@ -64,31 +103,37 @@ export const detectionApi = {
   },
 
   changeSource: async (source: CameraSource): Promise<ApiResponse> => {
-    const res = await fetch(`${API_BASE_URL}/change_camera_source`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source }),
+    return cameraQueue.add(async () => {
+      const res = await fetch(`${API_BASE_URL}/change_camera_source`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source }),
+      });
+      return res.json();
     });
-    return res.json();
   },
 
   startRecording: async (outputPath?: string): Promise<ApiResponse> => {
-    const response = await fetch(`${API_BASE_URL}/start_recording`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        output_path: outputPath
-      })
+    return recordingQueue.add(async () => {
+      const response = await fetch(`${API_BASE_URL}/start_recording`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          output_path: outputPath
+        })
+      });
+      return response.json();
     });
-    return response.json();
   },
 
   stopRecording: async (): Promise<ApiResponse<StopRecordingResponse>> => {
-    const response = await fetch(`${API_BASE_URL}/stop_recording`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+    return recordingQueue.add(async () => {
+      const response = await fetch(`${API_BASE_URL}/stop_recording`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return response.json();
     });
-    return response.json();
   },
 
   takeSnapshot: async (): Promise<ApiResponse> => {
@@ -107,19 +152,23 @@ export const videosApi = {
   },
 
   deleteVideo: async (videoId: string): Promise<ApiResponse> => {
-    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/delete`, {
-      method: 'DELETE'
+    return videoQueue.add(async () => {
+      const response = await fetch(`${API_BASE_URL}/videos/${videoId}/delete`, {
+        method: 'DELETE'
+      });
+      return response.json();
     });
-    return response.json();
   },
 
   renameVideo: async (videoId: string, newName: string): Promise<ApiResponse<{ new_name: string }>> => {
-    const response = await fetch(`${API_BASE_URL}/videos/${videoId}/rename`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ new_name: newName })
+    return videoQueue.add(async () => {
+      const response = await fetch(`${API_BASE_URL}/videos/${videoId}/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_name: newName })
+      });
+      return response.json();
     });
-    return response.json();
   },
 
   getVideoUrl: (filename: string): string => {

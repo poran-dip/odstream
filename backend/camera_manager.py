@@ -126,69 +126,166 @@ class CameraManager:
     def _remote_stream_worker(self):
         """Worker thread to continuously fetch frames from remote source"""
         try:
+            print(f"Connecting to remote stream: {self.camera_source['url']}")
+            
+            # First, try to connect and see what we get
             response = requests.get(self.camera_source['url'], stream=True, timeout=10)
             response.raise_for_status()
             
-            bytes_buffer = b''
-            for chunk in response.iter_content(chunk_size=1024):
-                if not self.remote_stream_active:
-                    break
-                    
-                bytes_buffer += chunk
+            print(f"Connected to remote stream. Content-Type: {response.headers.get('content-type', 'unknown')}")
+            
+            # Check if it's an MJPEG stream
+            content_type = response.headers.get('content-type', '').lower()
+            
+            if 'multipart' in content_type:
+                # Handle MJPEG stream
+                print("Detected MJPEG stream")
+                self._handle_mjpeg_stream(response)
+            else:
+                # Handle single image endpoint (like DroidCam /video)
+                print("Detected single image endpoint, polling for frames")
+                self._handle_single_image_polling()
                 
-                # Look for JPEG frame boundaries
-                start = bytes_buffer.find(b'\xff\xd8')  # JPEG start
-                end = bytes_buffer.find(b'\xff\xd9')    # JPEG end
-                
-                if start != -1 and end != -1 and end > start:
-                    # Extract complete JPEG frame
-                    jpeg_data = bytes_buffer[start:end+2]
-                    
-                    # Decode JPEG to OpenCV frame
-                    nparr = np.frombuffer(jpeg_data, np.uint8)
-                    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                    
-                    if frame is not None:
-                        with self.remote_frame_lock:
-                            self.remote_frame_buffer = frame
-                    
-                    # Remove processed data from buffer
-                    bytes_buffer = bytes_buffer[end+2:]
-                    
         except Exception as e:
             print(f"Error in remote stream worker: {e}")
             self.remote_stream_active = False
+
+    def _handle_mjpeg_stream(self, response):
+        """Handle MJPEG multipart stream"""
+        bytes_buffer = b''
+        for chunk in response.iter_content(chunk_size=1024):
+            if not self.remote_stream_active:
+                break
+                
+            bytes_buffer += chunk
+            
+            # Look for JPEG frame boundaries
+            start = bytes_buffer.find(b'\xff\xd8')  # JPEG start
+            end = bytes_buffer.find(b'\xff\xd9')    # JPEG end
+            
+            if start != -1 and end != -1 and end > start:
+                # Extract complete JPEG frame
+                jpeg_data = bytes_buffer[start:end+2]
+                
+                # Decode JPEG to OpenCV frame
+                nparr = np.frombuffer(jpeg_data, np.uint8)
+                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if frame is not None:
+                    with self.remote_frame_lock:
+                        self.remote_frame_buffer = frame
+                
+                # Remove processed data from buffer
+                bytes_buffer = bytes_buffer[end+2:]
+
+    def _handle_single_image_polling(self):
+        """Handle single image endpoint by polling"""
+        while self.remote_stream_active:
+            try:
+                # Fetch single frame
+                response = requests.get(self.camera_source['url'], timeout=5)
+                response.raise_for_status()
+                
+                # Decode JPEG to OpenCV frame
+                nparr = np.frombuffer(response.content, np.uint8)
+                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if frame is not None:
+                    with self.remote_frame_lock:
+                        self.remote_frame_buffer = frame
+                    print("Frame received from single image endpoint")
+                
+                # Small delay to avoid overwhelming the source
+                time.sleep(0.1)  # 10 FPS polling rate
+                
+            except Exception as e:
+                print(f"Error polling single image: {e}")
+                time.sleep(1)  # Wait longer on error
+                break    
     
+    def _get_base_url(self, video_feed_url):
+        """Extract base URL from video feed URL"""
+        # Handle different URL patterns
+        if video_feed_url.endswith('/video_feed'):
+            return video_feed_url[:-len('/video_feed')]
+        elif video_feed_url.endswith('/video'):
+            return video_feed_url[:-len('/video')]
+        else:
+            # If no specific endpoint, assume the URL is already the base
+            return video_feed_url
+
     def _start_remote_detection(self):
         """Start detection on remote camera source"""
         try:
-            response = requests.post(f"{self.camera_source['url'].replace('/api/video_feed', '')}/api/start_camera", timeout=10)
-            response.raise_for_status()
+            print(f"Starting remote detection for URL: {self.camera_source['url']}")
+            base_url = self._get_base_url(self.camera_source['url'])
+            print(f"Base URL: {base_url}")
+        
+            # Check if remote camera is already active
+            try:
+                status_response = requests.get(f"{base_url}/camera_status", timeout=5)
+                if status_response.status_code == 200:
+                    status_data = status_response.json()
+                    if status_data.get('camera_active', False):
+                        print("Remote camera already active")
+                        # Still need to start the stream worker if not running
+                        if not self.remote_stream_active:
+                            print("Starting stream worker...")
+                            self.remote_stream_active = True
+                            self.remote_stream_thread = threading.Thread(target=self._remote_stream_worker)
+                            self.remote_stream_thread.daemon = True
+                            self.remote_stream_thread.start()
+                        return True, "Remote camera already active"
+            except Exception as e:
+                print(f"Status check failed (continuing anyway): {e}")
+                # If status check fails, proceed with start_camera
+
+            # Try to start camera via API
+            try:
+                response = requests.post(f"{base_url}/start_camera", timeout=10)
+                response.raise_for_status()
+                print("Remote camera started via API")
+            except Exception as api_error:
+                print(f"start_camera API failed (this is OK for sources like DroidCam): {api_error}")
+                # Continue anyway - we'll try to connect directly to the stream
             
-            # Start the remote stream worker thread
+            # Start the remote stream worker thread regardless of API success
+            print("Starting remote stream worker...")
             self.remote_stream_active = True
             self.remote_stream_thread = threading.Thread(target=self._remote_stream_worker)
             self.remote_stream_thread.daemon = True
             self.remote_stream_thread.start()
             
-            return True, "Remote camera detection started"
+            # Wait a moment to see if connection establishes
+            import time
+            time.sleep(1)
+            
+            print(f"Remote stream active: {self.remote_stream_active}")
+            print(f"Remote thread alive: {self.remote_stream_thread.is_alive() if self.remote_stream_thread else False}")
+            
+            return True, "Remote camera connection established"
             
         except Exception as e:
             print(f"Error starting remote detection: {e}")
+            self.remote_stream_active = False
             return False, str(e)
-    
+        
     def _stop_remote_detection(self):
         """Stop detection on remote camera source"""
         try:
+            base_url = self._get_base_url(self.camera_source['url'])
+
             # Stop the stream worker
             self.remote_stream_active = False
             if self.remote_stream_thread and self.remote_stream_thread.is_alive():
                 self.remote_stream_thread.join(timeout=5)
             
             # Stop remote camera
-            base_url = self.camera_source['url'].replace('/api/video_feed', '')
-            response = requests.post(f"{base_url}/api/stop_camera", timeout=10)
-            response.raise_for_status()
+            try:
+                response = requests.post(f"{base_url}/stop_camera", timeout=10)
+                response.raise_for_status()
+            except Exception as e:
+                print(f"Warning: Failed to stop remote camera: {e}")
             
             with self.remote_frame_lock:
                 self.remote_frame_buffer = None
@@ -210,20 +307,27 @@ class CameraManager:
             else:
                 self.camera_source = {"type": "local", "name": "Webcam", "index": 0}
             
+            print(f"Camera source set to: {self.camera_source}")
             self.remote_camera = self.camera_source.get('type') == 'remote'
-            
-            # Load model for local cameras (needed for detection mode)
-            if not self.remote_camera:
-                if self.model is None:
-                    if not self.load_model():
-                        print("Warning: Model failed to load - detection features will be disabled")
+            print(f"Remote camera flag: {self.remote_camera}")
             
             # Handle remote source
             if self.remote_camera:
+                print("Handling remote camera...")
                 success, message = self._start_remote_detection()
+                print(f"Remote detection result: success={success}, message={message}")
+                if success:
+                    print("Remote camera setup successful")
                 return success, message
             
-            # Handle local camera - use index from source
+            # Handle local camera - only if NOT remote
+            print("Handling local camera...")
+            # Load model for local cameras (needed for detection mode)
+            if self.model is None:
+                if not self.load_model():
+                    print("Warning: Model failed to load - detection features will be disabled")
+            
+            # Use index from source for local camera
             camera_index = self.camera_source.get('index', 0)
             self.camera = cv2.VideoCapture(camera_index)
             
@@ -267,26 +371,61 @@ class CameraManager:
                 self.remote_camera = False
                 return success, message
             
-            # Handle local camera
+            # Handle local camera - make sure to release properly
             if self.camera is not None:
-                self.camera.release()
-                self.camera = None
-                print("Camera stopped")
+                try:
+                    self.camera.release()
+                    print("Local camera released")
+                except Exception as e:
+                    print(f"Error releasing camera: {e}")
+                finally:
+                    self.camera = None
             
+            # Clean up camera source references
             self.camera_source = None
             self.remote_camera = False
+            
+            print("Camera stopped")
             return True, "Camera stopped"
             
         except Exception as e:
             print(f"Error stopping camera: {e}")
+            # Force cleanup even on error
+            if hasattr(self, 'camera') and self.camera is not None:
+                try:
+                    self.camera.release()
+                except:
+                    pass
+                self.camera = None
+            self.camera_source = None
+            self.remote_camera = False
             return False, str(e)
     
     def change_camera_source(self, source):
         """Change camera source (stops current camera and starts new one)"""
         print(f"Changing camera source to: {source}")
         
-        # Stop current camera
-        self.stop_camera()
+        # Stop current camera with better error handling
+        try:
+            self.stop_camera()
+        except Exception as e:
+            print(f"Warning: Error stopping current camera: {e}")
+            # Force cleanup
+            self.camera = None
+            self.camera_source = None
+            self.remote_camera = False
+        
+        # Force cleanup of any lingering camera objects
+        if hasattr(self, 'camera') and self.camera is not None:
+            try:
+                self.camera.release()
+            except:
+                pass
+            self.camera = None
+        
+        # Small delay to ensure cleanup is complete
+        import time
+        time.sleep(0.2)
         
         # Start new camera
         return self.start_camera(source)
@@ -294,21 +433,30 @@ class CameraManager:
     def is_camera_active(self):
         """Check if camera is active"""
         if self.remote_camera:
-            return self.remote_stream_active
-        return self.camera is not None and self.camera.isOpened() if self.camera else False
-
+            active = self.remote_stream_active
+            print(f"Remote camera active check: {active}")
+            return active
+        else:
+            active = self.camera is not None and self.camera.isOpened() if self.camera else False
+            print(f"Local camera active check: {active}")
+            return active
+        
     def _get_current_frame(self):
         """Get current frame from active source"""
-        if self.remote_camera:
-            # Remote source
-            with self.remote_frame_lock:
-                if self.remote_frame_buffer is not None:
-                    return True, self.remote_frame_buffer.copy()
+        try:
+            if self.remote_camera:
+                # Remote source
+                with self.remote_frame_lock:
+                    if self.remote_frame_buffer is not None:
+                        return True, self.remote_frame_buffer.copy()
+                    return False, None
+            else:
+                # Local camera - add safety check
+                if self.camera is not None and self.camera.isOpened():
+                    return self.camera.read()
                 return False, None
-        else:
-            # Local camera
-            if self.camera is not None:
-                return self.camera.read()
+        except Exception as e:
+            print(f"Error getting current frame: {e}")
             return False, None
     
     def take_snapshot(self):
@@ -363,6 +511,18 @@ class CameraManager:
             # Enable detection mode when recording starts
             self.detection_enabled = True
             
+            # Start recording on remote camera if using remote source
+            if self.remote_camera:
+                try:
+                    base_url = self._get_base_url(self.camera_source['url'])
+                    response = requests.post(f"{base_url}/start_recording", 
+                                        timeout=10)
+                    if response.status_code != 200:
+                        return False, f"Failed to start remote recording: {response.text}"
+                    print("Remote recording started successfully")
+                except Exception as e:
+                    return False, f"Failed to communicate with remote camera: {e}"
+                
             # Initialize log file for detection logging
             if not self.remote_camera:
                 self._init_log_file()
@@ -437,6 +597,19 @@ class CameraManager:
             
             filename = Path(self.recording_filename).name if self.recording_filename else "unknown"
             self.is_recording = False
+
+            if self.remote_camera:
+                try:
+                    base_url = self._get_base_url(self.camera_source['url'])
+                    response = requests.post(f"{base_url}/stop_recording", 
+                                        timeout=10)
+                    if response.status_code != 200:
+                        print(f"Warning: Failed to stop remote recording: {response.text}")
+                    else:
+                        print("Remote recording stopped successfully")
+                except Exception as e:
+                    print(f"Warning: Failed to communicate with remote camera: {e}")
+                    
             saved_filename = self.recording_filename
             self.recording_filename = None
             

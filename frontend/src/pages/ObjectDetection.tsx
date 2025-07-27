@@ -1,4 +1,4 @@
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Settings, Play, Square, Folder, Camera, ChevronDown, Plus, Trash2 } from 'lucide-react'
@@ -11,7 +11,6 @@ import { settingsStorage, storageUtils, type CameraSource, type VideoSettings } 
 import { API_BASE_URL, DEFAULT_SOURCES } from '../utils/config';
 
 function ObjectDetectionPage() {
-  const [socket, setSocket] = useState<Socket | null>(null)
   const [isDetecting, setIsDetecting] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
@@ -137,7 +136,6 @@ function ObjectDetectionPage() {
     if (isLoadingSource || !selectedSource) return;
 
     const newSocket = io(API_BASE_URL.replace('/api', ''));
-    setSocket(newSocket);
 
     newSocket.on('connect', () => {
       console.log('Connected to backend socket');
@@ -330,45 +328,31 @@ function ObjectDetectionPage() {
     }
   };
   
-  useEffect(() => {
-    // Don't run if we're still loading the initial source or source is null
-    if (isLoadingSource || !selectedSource) return;
+  const handleSourceChange = async (source: CameraSource) => {
+    setLoading(true);
+    try {
+      const response = await detectionApi.changeSource(source);
 
-    let cancelled = false;
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-
-    const changeCameraSource = async (source: CameraSource): Promise<void> => {
-      setLoading(true);
-      try {
-        const response = await detectionApi.changeSource(source);
-
-        if (response.success) {
-          console.log(response.message ?? 'Camera source changed');
-          setError('');
-
-          timeout = setTimeout(() => {
-            if (!cancelled) setIsDetecting(true);
-          }, 100);
-        } else {
-          console.error(response.error ?? response.message)
-          setError(`Failed to change source to ${source.name}`);
-        }
-      } catch (err) {
-        console.error('Change camera source error:', err);
-        setError('Failed to connect to backend');
-      } finally {
-        setLoading(false);
+      if (response.success) {
+        console.log(response.message ?? 'Camera source changed');
+        setError('');
+        setSelectedSource(source); // Update UI state
+        setShowSourceDropdown(false);
+        
+        setTimeout(() => {
+          setIsDetecting(true);
+        }, 100);
+      } else {
+        console.error(response.error ?? response.message)
+        setError(`Failed to change source to ${source.name}`);
       }
-    };
-
-    // Always allow hot-swapping, backend handles stop/start internally
-    changeCameraSource(selectedSource);
-
-    return () => {
-      cancelled = true;
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [selectedSource, isLoadingSource]);
+    } catch (err) {
+      console.error('Change camera source error:', err);
+      setError('Failed to connect to backend');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Show loading state while fetching current source
   if (isLoadingSource || !selectedSource) {
@@ -412,10 +396,7 @@ function ObjectDetectionPage() {
                     {getAllSources().map((source) => (
                       <button
                         key={source.id}
-                        onClick={() => {
-                          setSelectedSource(source)
-                          setShowSourceDropdown(false)
-                        }}
+                        onClick={() => handleSourceChange(source)}
                         className={`w-full text-left px-4 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-slate-700/50 ${
                           selectedSource?.id === source.id ? 'bg-blue-600/20 text-blue-300' : 'text-slate-300'
                         }`}
