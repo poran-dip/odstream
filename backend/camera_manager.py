@@ -26,6 +26,11 @@ class CameraManager:
         self.stable_frames_required = 3
         self.last_logged_detection = None
         
+        # Initialize video settings from config
+        self.brightness = Config.DEFAULT_VIDEO_SETTINGS["brightness"]
+        self.contrast = Config.DEFAULT_VIDEO_SETTINGS["contrast"] 
+        self.saturation = Config.DEFAULT_VIDEO_SETTINGS["saturation"]
+        
         # Detection mode - controls whether YOLO is applied
         self.detection_enabled = False
         
@@ -447,7 +452,35 @@ class CameraManager:
         if self.remote_camera:
             return self.remote_stream_active
         return self.camera is not None and self.camera.isOpened() if self.camera else False
+    
+    def update_video_settings(self, brightness=None, contrast=None, saturation=None):
+        """Update video settings from frontend"""
+        if brightness is not None:
+            self.brightness = max(-100, min(100, brightness))  # Clamp to valid range
+        if contrast is not None:
+            self.contrast = max(0.0, min(3.0, contrast))
+        if saturation is not None:
+            self.saturation = max(0.0, min(2.0, saturation))
         
+        print(f"Video settings updated - Brightness: {self.brightness}, Contrast: {self.contrast}, Saturation: {self.saturation}")
+        
+    def _apply_settings(self, frame):
+        """Apply brightness, saturation, and contrast adjustments to frame"""
+        if frame is None:
+            return frame
+        
+        # Convert BGR to HSV for saturation adjustment
+        if self.saturation != 1.0:
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            hsv[:, :, 1] = cv2.multiply(hsv[:, :, 1], self.saturation)
+            frame = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+        
+        # Apply brightness and contrast
+        if self.contrast != 1.0 or self.brightness != 0:
+            frame = cv2.convertScaleAbs(frame, alpha=self.contrast, beta=self.brightness)
+        
+        return frame
+
     def _get_current_frame(self):
         """Get current frame from active source"""
         try:
@@ -455,12 +488,16 @@ class CameraManager:
                 # Remote source
                 with self.remote_frame_lock:
                     if self.remote_frame_buffer is not None:
-                        return True, self.remote_frame_buffer.copy()
+                        frame = self.remote_frame_buffer.copy()
+                        return True, self._apply_settings(frame)
                     return False, None
             else:
                 # Local camera - add safety check
                 if self.camera is not None and self.camera.isOpened():
-                    return self.camera.read()
+                    success, frame = self.camera.read()
+                    if success and frame is not None:
+                        frame = self._apply_settings(frame)
+                    return success, frame
                 return False, None
         except Exception as e:
             print(f"Error getting current frame: {e}")

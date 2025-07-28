@@ -274,6 +274,73 @@ def camera_status():
         'model_loaded': camera_manager.model is not None
     })
 
+@camera_bp.route('/api/video_settings', methods=['GET'])
+def get_video_settings():
+    """Get current video settings (brightness, contrast, saturation)"""
+    try:
+        current_settings = {
+            'brightness': camera_manager.brightness,
+            'contrast': camera_manager.contrast,
+            'saturation': camera_manager.saturation
+        }
+        
+        return jsonify({
+            'success': True,
+            'message': 'Video settings retrieved successfully',
+            'data': current_settings
+        })
+        
+    except Exception as e:
+        error_message = f"Failed to get video settings: {str(e)}"
+        return jsonify({
+            'success': False,
+            'error': error_message
+        }), 400
+
+@camera_bp.route('/api/update_video_settings', methods=['POST'])
+def update_video_settings():
+    """Update video settings (brightness, contrast, saturation)"""
+    data = request.get_json() or {}
+    
+    brightness = data.get('brightness')
+    contrast = data.get('contrast')
+    saturation = data.get('saturation')
+    
+    try:
+        # Update settings in camera manager
+        camera_manager.update_video_settings(
+            brightness=brightness,
+            contrast=contrast,
+            saturation=saturation
+        )
+        
+        # Get current settings to return
+        current_settings = {
+            'brightness': camera_manager.brightness,
+            'contrast': camera_manager.contrast,
+            'saturation': camera_manager.saturation
+        }
+        
+        # Broadcast to all connected clients
+        if socketio:
+            socketio.emit('video_settings_updated', {
+                'data': current_settings,
+                'message': 'Video settings updated successfully'
+            })
+        
+        return jsonify({
+            'success': True,
+            'message': 'Video settings updated successfully',
+            'settings': current_settings
+        })
+        
+    except Exception as e:
+        error_message = f"Failed to update video settings: {str(e)}"
+        return jsonify({
+            'success': False,
+            'error': error_message
+        }), 400
+
 @camera_bp.route('/api/debug')
 def debug():
     """Debug endpoint to check camera and model status"""

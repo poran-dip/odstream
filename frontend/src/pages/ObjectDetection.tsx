@@ -7,7 +7,7 @@ import PageHeader from '../components/PageHeader';
 import VideoContainer from '../components/VideoContainer';
 import { formatElapsedTime } from '../utils/formatters';
 import { detectionApi } from '../utils/api';
-import { settingsStorage, storageUtils, type CameraSource, type VideoSettings } from '../utils/storage';
+import { storageUtils, DEFAULT_SETTINGS, type CameraSource, type VideoSettings } from '../utils/storage';
 import { API_BASE_URL, DEFAULT_SOURCES } from '../utils/config';
 
 function ObjectDetectionPage() {
@@ -22,7 +22,7 @@ function ObjectDetectionPage() {
   const [customSources, setCustomSources] = useState<CameraSource[]>([])
   const [newSourceName, setNewSourceName] = useState<string>('')
   const [newSourceUrl, setNewSourceUrl] = useState<string>('')
-  const [settings, setSettings] = useState<VideoSettings>(() => settingsStorage.getSettings());
+  const [settings, setSettings] = useState<VideoSettings>(DEFAULT_SETTINGS);
   const [detectionStartTime, setDetectionStartTime] = useState(Number);
   const [showStopConfirmation, setShowStopConfirmation] = useState<boolean>(false);
   
@@ -98,6 +98,16 @@ function ObjectDetectionPage() {
           console.warn('No source in camera status response, using default');
           setSelectedSource(DEFAULT_SOURCES[0]);
         }
+
+        try {
+          const settingsResponse = await detectionApi.getVideoSettings();
+          if (settingsResponse.success && settingsResponse.data) {
+            setSettings(settingsResponse.data);
+          }
+        } catch (error) {
+          console.error('Error loading video settings:', error);
+        }
+        
       } catch (error) {
         console.error('Error loading camera status:', error);
         setSelectedSource(DEFAULT_SOURCES[0]);
@@ -144,10 +154,23 @@ function ObjectDetectionPage() {
     showToast(`"${name}" deleted!`, 'success')
   }
 
-  // Update settings to localStorage
-  useEffect(() => {
-    settingsStorage.saveSettings(settings);
-  }, [settings]);
+  const updateVideoSettings = async (newSettings: Partial<VideoSettings>) => {
+    try {
+      setLoading(true);
+      const response = await detectionApi.updateVideoSettings(newSettings);
+      
+      if (response.success) {
+        showToast('Video settings updated successfully!', 'success');
+      } else {
+        showToast(response.error || 'Failed to update video settings', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating video settings:', error);
+      showToast('Failed to update video settings', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isLoadingSource || !selectedSource) return;
@@ -234,6 +257,17 @@ function ObjectDetectionPage() {
     newSocket.on('recording_status', (data) => {
       console.log('Recording status update:', data);
       setIsRecording(data.recording);
+    });
+
+    newSocket.on('video_settings_updated', (data) => {
+      console.log('Video settings update from socket:', data);
+      if (data.data) {
+        setSettings(prev => ({ ...prev, ...data.data }));
+        // Show toast only if it's from another user (you can add logic to detect this)
+        if (data.message) {
+          showToast(data.message, 'info');
+        }
+      }
     });
 
     return () => {
@@ -635,13 +669,16 @@ function ObjectDetectionPage() {
                       <label className="block text-sm font-medium mb-2 text-slate-300">Brightness</label>
                       <input
                         type="range"
-                        min="0"
+                        min="-100"
                         max="100"
                         value={settings.brightness}
-                        onChange={(e) => setSettings(prev => ({ ...prev, brightness: parseInt(e.target.value) }))}
+                        onChange={(e) => {
+                          const brightness = parseInt(e.target.value);
+                          setSettings(prev => ({ ...prev, brightness }));
+                        }}
                         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
                       />
-                      <span className="text-sm text-slate-400 mt-1 block">{settings.brightness}%</span>
+                      <span className="text-sm text-slate-400 mt-1 block">{settings.brightness}</span>
                     </div>
                     
                     <div>
@@ -649,12 +686,16 @@ function ObjectDetectionPage() {
                       <input
                         type="range"
                         min="0"
-                        max="100"
-                        value={settings.contrast}
-                        onChange={(e) => setSettings(prev => ({ ...prev, contrast: parseInt(e.target.value) }))}
+                        max="300"
+                        step="10"
+                        value={Math.round(settings.contrast * 100)}
+                        onChange={(e) => {
+                          const contrast = parseInt(e.target.value) / 100;
+                          setSettings(prev => ({ ...prev, contrast }));
+                        }}
                         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
                       />
-                      <span className="text-sm text-slate-400 mt-1 block">{settings.contrast}%</span>
+                      <span className="text-sm text-slate-400 mt-1 block">{(settings.contrast * 100).toFixed(0)}%</span>
                     </div>
                     
                     <div>
@@ -662,23 +703,27 @@ function ObjectDetectionPage() {
                       <input
                         type="range"
                         min="0"
-                        max="100"
-                        value={settings.saturation}
-                        onChange={(e) => setSettings(prev => ({ ...prev, saturation: parseInt(e.target.value) }))}
+                        max="200"
+                        step="10"
+                        value={Math.round(settings.saturation * 100)}
+                        onChange={(e) => {
+                          const saturation = parseInt(e.target.value) / 100;
+                          setSettings(prev => ({ ...prev, saturation }));
+                        }}
                         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
                       />
-                      <span className="text-sm text-slate-400 mt-1 block">{settings.saturation}%</span>
+                      <span className="text-sm text-slate-400 mt-1 block">{(settings.saturation * 100).toFixed(0)}%</span>
                     </div>
                     
                     <div className="flex items-center space-x-3">
                       <input
                         type="checkbox"
                         id="annotateYOLO"
-                        checked={settings.annotateYOLO}
-                        onChange={(e) => setSettings(prev => ({ ...prev, annotateYOLO: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500"
+                        checked={true}
+                        disabled={true}
+                        className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
-                      <label htmlFor="annotateYOLO" className="text-sm text-slate-300">
+                      <label htmlFor="annotateYOLO" className="text-sm text-slate-400">
                         Enable YOLO Annotations
                       </label>
                     </div>
@@ -765,7 +810,20 @@ function ObjectDetectionPage() {
                 </div>
               </div>
               
-              <div className="flex justify-end mt-8">
+              <div className="flex justify-between mt-8">
+                <button
+                  onClick={() => {
+                    updateVideoSettings({
+                      brightness: settings.brightness,
+                      contrast: settings.contrast,
+                      saturation: settings.saturation
+                    });
+                  }}
+                  disabled={loading}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                >
+                  {loading ? 'Saving...' : 'Save Settings'}
+                </button>
                 <button
                   onClick={() => setShowSettings(false)}
                   className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"

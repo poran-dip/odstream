@@ -64,6 +64,13 @@ class Config:
     CAMERA_HEIGHT = 480
     CAMERA_FPS = 30
     
+    # Video settings configuration
+    DEFAULT_VIDEO_SETTINGS = {
+        "brightness": 0,      # -100 to 100 (0 = no change)
+        "contrast": 1.0,      # 0.0 to 3.0 (1.0 = no change)
+        "saturation": 1.0,    # 0.0 to 2.0 (1.0 = no change)
+    }
+    
     # YOLO configuration
     OFFICIAL_NEW_MODEL = True   # v5nu, v8n, etc. do not use for v5n or custom models
     YOLO_MODEL_VERSION = 'v5'

@@ -1,4 +1,4 @@
-import type { CameraSource } from "./storage";
+import type { CameraSource, VideoSettings } from "./storage";
 import { API_BASE_URL } from "./config";
 
 export interface VideoFile {
@@ -140,6 +140,20 @@ export const detectionApi = {
     const response = await fetch(`${API_BASE_URL}/snapshot`, {
       method: 'POST',
     });
+    return response.json();
+  },
+
+  updateVideoSettings: async (settings: Partial<VideoSettings>): Promise<ApiResponse> => {
+    const response = await fetch(`${API_BASE_URL}/update_video_settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings)
+    });
+    return response.json();
+  },
+
+  getVideoSettings: async (): Promise<ApiResponse<VideoSettings>> => {
+    const response = await fetch(`${API_BASE_URL}/video_settings`);
     return response.json();
   }
 };

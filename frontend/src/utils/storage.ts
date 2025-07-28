@@ -65,38 +65,12 @@ export interface VideoSettings {
   brightness: number;
   contrast: number;
   saturation: number;
-  annotateYOLO: boolean;
+  annotateYOLO?: boolean;
 }
 
-const SETTINGS_KEY = 'userSettings';
-
 export const DEFAULT_SETTINGS: VideoSettings = {
-  brightness: 50,
-  contrast: 50,
-  saturation: 50,
-  annotateYOLO: true
-};
-
-export const settingsStorage = {
-  getSettings: (): VideoSettings => {
-    try {
-      const saved = localStorage.getItem(SETTINGS_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
-    } catch (err) {
-      console.error('Failed to load settings:', err);
-      return DEFAULT_SETTINGS;
-    }
-  },
-
-  saveSettings: (settings: VideoSettings): void => {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    } catch (err) {
-      console.error('Failed to save settings:', err);
-    }
-  },
-
-  resetSettings: (): void => {
-    localStorage.removeItem(SETTINGS_KEY);
-  }
+  brightness: 0,
+  contrast: 1.0,
+  saturation: 1.0,
+  annotateYOLO: false
 };
