@@ -79,6 +79,31 @@ Close the servers by killing the terminals or by pressing `Ctrl + C`.
 
 ---
 
+## YOLO Model Setup
+
+### If using official new models (`OFFICIAL_NEW_MODEL = True`)
+
+```bash
+pip install ultralytics
+```
+
+Set your `YOLO_MODEL_PATH` to new Ultralytics YOLO models such as `'models/yolov8n.pt'` or `'models/yolov5nu.pt'`.
+
+### If using custom YOLOv5 models (`OFFICIAL_NEW_MODEL = False`)
+
+1. Clone the YOLOv5 repository:
+
+```bash
+cd backend
+venv\Scripts\activate
+git clone https://github.com/ultralytics/yolov5.git
+pip install -r yolov5/requirements.txt
+```
+
+2. Place your custom-trained `.pt` model in `backend/models/`.
+
+3. Update `YOLO_MODEL_PATH` in `config.py` to point to it.
+
 ## Running after initial set up
 
 ### Frontend
