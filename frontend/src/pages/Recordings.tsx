@@ -194,7 +194,7 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
       <div className="max-w-7xl mx-auto p-6 h-full flex flex-col">
         <PageHeader 
-          title='Video Player'
+          title='ODReplay'
           description='Browse and play your recorded videos'
           showBackButton
           onBack={onBack}

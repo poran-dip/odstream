@@ -27,11 +27,11 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
           {showPlaceholder ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <Camera className="w-20 h-20 text-slate-500 mx-auto mb-6" />
-                <h3 className="text-xl font-semibold text-slate-300 mb-2">
+                <Camera className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 text-slate-500 mx-auto mb-4 sm:mb-6" />
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-300 mb-2">
                   {placeholderTitle}
                 </h3>
-                <p className="text-slate-400">
+                <p className="text-sm sm:text-base text-slate-400 px-4 sm:px-0">
                   {placeholderDescription}
                 </p>
               </div>

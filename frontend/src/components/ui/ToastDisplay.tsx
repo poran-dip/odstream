@@ -89,7 +89,7 @@ const ToastDisplay: React.FC<ToastDisplayProps> = ({
   const styles = getToastStyles()
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9999] w-full max-w-sm sm:max-w-md mx-4 sm:mx-0 animate-in slide-in-from-bottom-2 duration-300">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 z-[9999] w-[calc(100vw-2rem)] max-w-sm sm:max-w-md sm:w-full animate-in slide-in-from-bottom-2 duration-300">
       <div className={`${styles.bg} border ${styles.border} backdrop-blur-md rounded-lg p-4 shadow-lg ${styles.shadow}`}>
         <div className="flex items-start space-x-3">
           <div className={styles.iconColor}>

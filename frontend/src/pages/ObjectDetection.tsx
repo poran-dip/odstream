@@ -434,16 +434,17 @@ function ObjectDetectionPage() {
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <PageHeader 
-          title="Real-Time Detection System"
-          description="Real-time object detection powered by AI"
+          title="ODStream"
+          description="Real-time object detection & live streaming"
           rightActions={
-            <>
-              {/* Camera Source Dropdown */}
-              <div className="relative">
+            <div className="w-full flex justify-between gap-3">
+              {/* Camera Source Dropdown - takes most space */}
+              <div className="relative flex-1 lg:w-64 min-w-0">
                 <button
                   onClick={() => setShowSourceDropdown(!showSourceDropdown)}
                   disabled={isLoadingSource}
-                  className="w-64 bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-expanded={showSourceDropdown}
+                  className="w-full bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <div className="flex items-center space-x-2 truncate">
                     <Camera className="w-5 h-5 text-slate-300 flex-shrink-0" />
@@ -455,7 +456,7 @@ function ObjectDetectionPage() {
                 </button>
                 
                 {showSourceDropdown && !isLoadingSource && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-xl shadow-xl z-10">
+                  <div className="absolute top-full left-0 mt-2 w-full lg:w-64 bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-xl shadow-xl z-10">
                     {getAllSources().map((source) => (
                       <button
                         key={source.id}
@@ -471,19 +472,22 @@ function ObjectDetectionPage() {
                 )}
               </div>
 
-              <button
-                onClick={() => setShowSettings(true)}
-                className="bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105"
-              >
-                <Settings className="w-5 h-5 text-slate-300" />
-              </button>
-              <button
-                onClick={() => navigate('/recordings')}
-                className="bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105"
-              >
-                <Folder className="w-5 h-5 text-slate-300" />
-              </button>
-            </>
+              {/* Settings and Folder buttons container */}
+              <div className="flex items-center space-x-3 flex-shrink-0">
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105"
+                >
+                  <Settings className="w-5 h-5 text-slate-300" />
+                </button>
+                <button
+                  onClick={() => navigate('/recordings')}
+                  className="bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105"
+                >
+                  <Folder className="w-5 h-5 text-slate-300" />
+                </button>
+              </div>
+            </div>
           }
         />
 
