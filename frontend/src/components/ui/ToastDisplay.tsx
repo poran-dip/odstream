@@ -1,9 +1,9 @@
 import { AlertCircle, CheckCircle, Info, AlertTriangle, X } from 'lucide-react'
 import { useEffect } from 'react'
 
-type ToastType = 'success' | 'error' | 'warning' | 'info'
+export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
-interface ToastDisplayProps {
+export interface ToastDisplayProps {
   message: string
   type?: ToastType
   onClose?: () => void

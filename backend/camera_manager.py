@@ -1,7 +1,13 @@
+import sys
+import warnings
 import cv2
 import requests
 import threading
 import time
+import platform
+
+import torch
+from ultralytics import YOLO
 
 from config import Config
 from datetime import datetime
@@ -32,31 +38,43 @@ class CameraManager:
         self.remote_stream_active = False
         
     def load_model(self):
-        """Load YOLO model"""
+        """Load YOLO model based on config version (v5 or v8)"""
         try:
-            print(f"Loading YOLO model from {Config.YOLO_MODEL_PATH}")
+            print(f"Loading YOLO model ({Config.YOLO_MODEL_VERSION}) from {Config.YOLO_MODEL_PATH}")
 
-            if not Config.CUSTOM_MODEL:
-                from ultralytics import YOLO
-                self.model = YOLO(Config.YOLO_MODEL_PATH)
-            else:
-                import torch
-                checkpoint = torch.load(Config.YOLO_MODEL_PATH, map_location='cpu')
-    
-                if hasattr(checkpoint, 'model'):
-                    self.model = checkpoint.model
-                elif 'model' in checkpoint:
-                    self.model = checkpoint['model']
-                elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
-                    raise NotImplementedError("State dict loading requires model architecture definition")
-                else:
-                    self.model = checkpoint
-                
-                if hasattr(self.model, 'eval'):
-                    self.model.eval()
+            # Handle PosixPath on Windows
+            if platform.system() == "Windows":
+                import pathlib
+                pathlib.PosixPath = pathlib.WindowsPath
             
+            if Config.OFFICIAL_NEW_MODEL or Config.YOLO_MODEL_VERSION == "v8":
+                # YOLOv8 (Ultralytics official)
+                self.model = YOLO(Config.YOLO_MODEL_PATH)
+
+            elif Config.YOLO_MODEL_VERSION == "v5":
+                # YOLOv5 custom repo
+                yolov5_path = Path(__file__).parent / "yolov5"
+                if str(yolov5_path) not in sys.path:
+                    sys.path.append(str(yolov5_path))
+
+                # Suppress annoying future warnings (e.g., amp.autocast)
+                warnings.filterwarnings("ignore", category=FutureWarning)
+
+                self.model = torch.hub.load(
+                    str(yolov5_path),
+                    'custom',
+                    path=str(Path(Config.YOLO_MODEL_PATH)),
+                    source='local',
+                    force_reload=True
+                )
+                self.model.eval()
+
+            else:
+                raise ValueError(f"Unsupported YOLO version: {Config.YOLO_MODEL_VERSION}")
+
             print("Model loaded successfully!")
             return True
+
         except Exception as e:
             print(f"Error loading model: {e}")
             return False
@@ -88,22 +106,35 @@ class CameraManager:
     
     def _format_detection_string(self, results):
         """Format detection results into a readable string"""
-        if not results or len(results[0].boxes) == 0:
-            return "No objects detected"
-        
-        detections = []
-        for box in results[0].boxes:
-            if box.conf[0] >= 0.3:
-                class_id = int(box.cls[0])
-                confidence = float(box.conf[0])
-                class_name = self.model.names[class_id]
-                detections.append(f"{class_name}({confidence:.2f})")
-        
-        if not detections:
-            return "No high-confidence objects detected"
-        
-        return ", ".join(detections)
-    
+        try:
+            detections = []
+            conf_threshold = 0.3
+
+            if Config.OFFICIAL_NEW_MODEL or Config.YOLO_MODEL_VERSION == 'v8':
+                # YOLOv8 Detections, handles both single result & list of results
+                res_list = results if isinstance(results, list) else [results]
+                for res in res_list:
+                    if not hasattr(res, "boxes") or len(res.boxes) == 0:
+                        continue
+                    for box in res.boxes:
+                        conf = float(box.conf)
+                        if conf >= conf_threshold:
+                            detections.append(f"{res.names[int(box.cls)]}({conf:.2f})")
+
+            elif Config.YOLO_MODEL_VERSION == 'v5':
+                # YOLOv5 AutoShape Detections
+                if len(results.xyxy[0]) == 0:
+                    return "No objects detected"
+                for *box, conf, cls in results.xyxy[0]:
+                    if conf >= conf_threshold:
+                        detections.append(f"{results.names[int(cls)]}({conf:.2f})")
+
+            return ", ".join(detections) if detections else "No high-confidence objects detected"
+
+        except Exception as e:
+            print(f"Error formatting detections: {e}")
+            return "Detection formatting error"
+
     def _log_detection(self, results):
         """Log detection results if they are stable"""
         if not self.log_file:
@@ -406,7 +437,6 @@ class CameraManager:
             self.camera = None
         
         # Small delay to ensure cleanup is complete
-        import time
         time.sleep(0.2)
         
         # Start new camera
@@ -436,6 +466,33 @@ class CameraManager:
             print(f"Error getting current frame: {e}")
             return False, None
     
+    def _annotate_frame(self, frame):
+        """
+        Annotate frame using YOLO model results.
+        Handles YOLOv5 render() and YOLOv8 plot() differences safely.
+        """
+        try:
+            results = None
+
+            if Config.OFFICIAL_NEW_MODEL or Config.YOLO_MODEL_VERSION == "v8":
+                results = self.model(frame, verbose=False)
+                # handle list return type
+                if isinstance(results, list) and len(results) > 0 and hasattr(results[0], "plot"):
+                    return results[0].plot(), results
+                elif hasattr(results, "plot"):
+                    return results.plot(), results
+
+            elif Config.YOLO_MODEL_VERSION == "v5":
+                results = self.model(frame)
+                if hasattr(results, "render"):
+                    return results.render()[0], results
+
+            return frame, results  # fallback
+
+        except Exception as e:
+            print(f"Error annotating frame: {e}")
+            return frame, results
+
     def take_snapshot(self):
         """Take a snapshot and save it"""
         if not self.is_camera_active():
@@ -449,8 +506,7 @@ class CameraManager:
             
             # Apply YOLO detection if enabled and available
             if self.detection_enabled and not self.remote_camera and self.model is not None:
-                results = self.model(frame, verbose=False)
-                annotated_frame = results[0].plot()
+                annotated_frame, _ = self._annotate_frame(frame)
             else:
                 annotated_frame = frame
             
@@ -495,8 +551,9 @@ class CameraManager:
                     response = requests.post(f"{base_url}/start_recording", 
                                         timeout=10)
                     if response.status_code != 200:
-                        return False, f"Failed to start remote recording: {response.text}"
-                    print("Remote recording started successfully")
+                        print(f"Failed to start remote recording, continuing with local recording anyway")
+                    else:
+                        print("Remote recording started successfully")
                 except Exception as e:
                     return False, f"Failed to communicate with remote camera: {e}"
                 
@@ -632,10 +689,9 @@ class CameraManager:
             try:
                 # Apply YOLO detection only when detection is enabled (during recording)
                 if self.detection_enabled and not self.remote_camera and self.model is not None:
-                    results = self.model(frame, verbose=False)
-                    annotated_frame = results[0].plot()
-                    # Log detection results if they are stable
-                    self._log_detection(results)
+                    annotated_frame, results = self._annotate_frame(frame)
+                    if results:
+                        self._log_detection(results)
                 else:
                     # For raw video streaming or remote cameras, use frame as-is
                     annotated_frame = frame

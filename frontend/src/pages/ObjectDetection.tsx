@@ -2,7 +2,7 @@ import { io } from 'socket.io-client';
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Settings, Play, Square, Folder, Camera, ChevronDown, Plus, Trash2 } from 'lucide-react'
-import ToastDisplay from '../components/ui/ToastDisplay'
+import ToastDisplay, { type ToastDisplayProps, type ToastType } from '../components/ui/ToastDisplay'
 import PageHeader from '../components/PageHeader';
 import VideoContainer from '../components/VideoContainer';
 import { formatElapsedTime } from '../utils/formatters';
@@ -13,7 +13,7 @@ import { API_BASE_URL, DEFAULT_SOURCES } from '../utils/config';
 function ObjectDetectionPage() {
   const [isDetecting, setIsDetecting] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string>('')
+  const [toast, setToast] = useState<ToastDisplayProps | null>(null)
   const [showSettings, setShowSettings] = useState<boolean>(false)
   const [isRecording, setIsRecording] = useState<boolean>(false)
   const [showSourceDropdown, setShowSourceDropdown] = useState<boolean>(false)
@@ -29,6 +29,10 @@ function ObjectDetectionPage() {
   const imgRef = useRef<HTMLImageElement>(null)
   const navigate = useNavigate()
 
+  const showToast = (message: string, type: ToastType = 'error') => {
+    setToast({ message, type })
+  }
+  
   const findMatchingSource = (backendSource: any, availableSources: CameraSource[]): CameraSource | null => {
     return availableSources.find(src => {
       if (src.type === 'local' && backendSource.type === 'local') {
@@ -110,21 +114,34 @@ function ObjectDetectionPage() {
   }
 
   const addCustomSource = () => {
-    if (newSourceName.trim() && newSourceUrl.trim()) {
-      const newSource = storageUtils.addCustomSource(newSourceName, newSourceUrl)
-      setCustomSources(prev => [...prev, newSource])
-      setNewSourceName('')
-      setNewSourceUrl('')
+    const name = newSourceName.trim()
+    const url = newSourceUrl.trim()
+
+    if (!name || !url) {
+      return showToast("Name and URL are required", "warning")
     }
+    if (!url.includes(".")) return showToast("URL looks wrong?", "warning")
+
+    const newSource = storageUtils.addCustomSource(name, url)
+    setCustomSources(prev => [...prev, newSource])
+    showToast(`${name} added!`, 'success')
+    setNewSourceName('')
+    setNewSourceUrl('')
   }
 
   const deleteCustomSource = (id: string) => {
+    const sourceToDelete = customSources.find(source => source.id === id)
+
     storageUtils.removeCustomSource(id)
     setCustomSources(prev => prev.filter(source => source.id !== id))
+
     // If the deleted source was selected, switch to webcam
     if (selectedSource?.id === id) {
       setSelectedSource(DEFAULT_SOURCES[0])
     }
+    
+    const name = sourceToDelete?.name || 'Source'
+    showToast(`"${name}" deleted!`, 'success')
   }
 
   // Update settings to localStorage
@@ -228,7 +245,7 @@ function ObjectDetectionPage() {
     setLoading(true);
     
     if (!selectedSource) {
-      setError('Unable to start detection: No source was provided');
+      showToast('Unable to start detection: No source was provided', 'error');
       return;
     }
 
@@ -238,11 +255,11 @@ function ObjectDetectionPage() {
       if (response.message && !response.error) {
         console.log('Detection start request sent');
       } else {
-        setError(response.error || response.message || "Something went wrong");
+        showToast(response.error || response.message || "Something went wrong");
       }
     } catch (err) {
       console.error('Start detection error:', err);
-      setError('Failed to connect to backend');
+      showToast('Failed to connect to backend');
     } finally {
       setLoading(false);
     }
@@ -262,7 +279,7 @@ function ObjectDetectionPage() {
       console.log('Detection stop request sent');
     } catch (err) {
       console.error('Stop camera error:', err);
-      setError('Failed to stop camera');
+      showToast('Failed to stop camera');
     } finally {
       setLoading(false);
     }
@@ -270,39 +287,39 @@ function ObjectDetectionPage() {
 
   const handleStartRecording = async () => {
     if (!isDetecting) {
-      setError("Please start detection first before recording");
+      showToast("Please start detection first before recording");
       return;
     }
     
     try {
-      setError("");
+      setToast(null);
       const response = await detectionApi.startRecording();
       
       if (response.success) {
         // Don't set state here - let the socket event handle it
         console.log('Recording start request sent');
       } else {
-        setError(response.error || "Failed to start recording");
+        showToast(response.error || "Failed to start recording");
       }
     } catch (error) {
       console.error('Error starting recording:', error);
-      setError("Error starting recording: " + (error instanceof Error ? error.message : String(error)));
+      showToast("Error starting recording: " + (error instanceof Error ? error.message : String(error)));
     }
   };
 
   const handleStopRecording = async () => {
     try {
-      setError("");
+      setToast(null);
       const response = await detectionApi.stopRecording();
       
       if (response.success) {
         console.log('Recording stop request sent');
       } else {
-        setError(response.error || "Failed to stop recording");
+        showToast(response.error || "Failed to stop recording");
       }
     } catch (error) {
       console.error('Error stopping recording:', error);
-      setError("Error stopping recording: " + (error instanceof Error ? error.message : String(error)));
+      showToast("Error stopping recording: " + (error instanceof Error ? error.message : String(error)));
     }
   };
 
@@ -313,17 +330,17 @@ function ObjectDetectionPage() {
       if (response.success) {
         // Show success message or notification
         console.log('Snapshot taken:', response.message);
-        setError("Snapshot taken!")
+        showToast("Snapshot taken!", 'success')
       } else {
-        setError(response.error || "Snapshot failed")
+        showToast(response.error || "Snapshot failed")
         console.error('Snapshot failed:', response.error);
       }
     } catch (error) {
         console.error('Error taking snapshot:', error)
         if (error instanceof Error) {
-          setError("Error taking snapshot: " + error.message);
+          showToast("Error taking snapshot: " + error.message);
         } else {
-          setError("Error taking snapshot: " + String(error));
+          showToast("Error taking snapshot: " + String(error));
       }
     }
   };
@@ -335,7 +352,7 @@ function ObjectDetectionPage() {
 
       if (response.success) {
         console.log(response.message ?? 'Camera source changed');
-        setError('');
+        setToast(null);
         setSelectedSource(source); // Update UI state
         setShowSourceDropdown(false);
         
@@ -344,23 +361,35 @@ function ObjectDetectionPage() {
         }, 100);
       } else {
         console.error(response.error ?? response.message)
-        setError(`Failed to change source to ${source.name}`);
+        showToast(`Failed to change source to ${source.name}`);
       }
     } catch (err) {
       console.error('Change camera source error:', err);
-      setError('Failed to connect to backend');
+      showToast('Failed to connect to backend');
     } finally {
       setLoading(false);
     }
   };
 
-  // Show loading state while fetching current source
   if (isLoadingSource || !selectedSource) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-slate-300">Loading camera settings...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 
+                      text-white flex items-center justify-center animate-fade-in">
+        <div className="text-center space-y-4">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute animate-ping rounded-full h-16 w-16 bg-blue-500 opacity-50"></div>
+            <svg 
+              className="h-12 w-12 text-blue-400 animate-pulse" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M3 5h2l.4 2M7 13h10l1-2H6.4M7 13l1.6 8h6.8l1.6-8M7 13l1-2m3-5h4" />
+            </svg>
+          </div>
+          <p className="text-slate-300 text-lg font-light">
+            Initializing camera settings...
+          </p>
         </div>
       </div>
     );
@@ -424,13 +453,13 @@ function ObjectDetectionPage() {
           }
         />
 
-        {error &&
-          <ToastDisplay 
-            message={error} 
-            type='error'
-            onClose={() => setError('')}
+        {toast && (
+          <ToastDisplay
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
           />
-        }
+        )}
 
         {/* Stop Camera Confirmation Dialog */}
         {showStopConfirmation && (

@@ -65,6 +65,7 @@ class Config:
     CAMERA_FPS = 30
     
     # YOLO configuration
-    CUSTOM_MODEL = False
+    OFFICIAL_NEW_MODEL = True   # v5nu, v8n, etc. do not use for v5n or custom models
+    YOLO_MODEL_VERSION = 'v5'
     YOLO_MODEL_PATH = 'models/yolov5nu.pt'
     JPEG_QUALITY = 80
