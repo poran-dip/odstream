@@ -9,7 +9,7 @@ export interface VideoFile {
   lastModified: number;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   error?: string;
   message?: string;
@@ -23,7 +23,7 @@ export interface StopRecordingResponse {
 
 // Request queue management
 class RequestQueue {
-  private queue: Array<() => Promise<any>> = [];
+  private queue: Array<() => Promise<unknown>> = [];
   private processing = false;
 
   async add<T>(request: () => Promise<T>): Promise<T> {
@@ -83,7 +83,7 @@ export const detectionApi = {
 
   getCameraStatus: async (): Promise<{ 
     active: boolean; 
-    source?: any; 
+    source?: CameraSource; 
     detection_enabled?: boolean; 
     recording?: boolean; 
     model_loaded?: boolean; 

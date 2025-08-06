@@ -33,7 +33,7 @@ function ObjectDetectionPage() {
     setToast({ message, type })
   }
   
-  const findMatchingSource = (backendSource: any, availableSources: CameraSource[]): CameraSource | null => {
+  const findMatchingSource = (backendSource: CameraSource, availableSources: CameraSource[]): CameraSource | null => {
     return availableSources.find(src => {
       if (src.type === 'local' && backendSource.type === 'local') {
         return src.index === backendSource.index;
@@ -238,7 +238,7 @@ function ObjectDetectionPage() {
               console.error('MJPEG stream error:', e);
               
               setTimeout(() => {
-                if (imgRef.current && isDetecting) {
+                if (imgRef.current) {
                   console.log("Retrying MJPEG stream connection...");
                   imgRef.current.src = videoUrl;
                 }

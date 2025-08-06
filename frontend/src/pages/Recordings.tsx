@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Folder, Play, Trash2, Edit2, Check, X, RefreshCw, Settings } from 'lucide-react';
 import ToastDisplay from '../components/ui/ToastDisplay';
 import PageHeader from '../components/PageHeader';
@@ -30,25 +30,7 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
   const [newPath, setNewPath] = useState('');
   const [currentPath, setCurrentPath] = useState('');
 
-  // Load videos on component mount
-  useEffect(() => {
-    loadVideos();
-    loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/config`);
-      const data = await response.json();
-      if (data.success) {
-        setCurrentPath(data.video_path);
-      }
-    } catch (error) {
-      console.error('Error loading config:', error);
-    }
-  };
-
-  const loadVideos = async () => {
+  const loadVideos = useCallback(async (selectVideoId?: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -57,9 +39,17 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
       
       if (data.success) {
         setRecordings(data.videos);
-        // Auto-select first video if available
-        if (data.videos.length > 0 && !currentVideo) {
-          setCurrentVideo(data.videos[0]);
+        // Auto-select video by ID if specified, otherwise first video
+        if (data.videos.length > 0) {
+          let videoToSelect;
+          if (selectVideoId) {
+            videoToSelect = data.videos.find((v: VideoFile) => v.id === selectVideoId) || data.videos[0];
+          } else {
+            videoToSelect = data.videos[0];
+          }
+          setCurrentVideo(videoToSelect);
+        } else {
+          setCurrentVideo(null)
         }
       } else {
         setError('Failed to load videos');
@@ -70,7 +60,25 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Load videos on component mount
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/config`);
+        const data = await response.json();
+        if (data.success) {
+          setCurrentPath(data.video_path);
+        }
+      } catch (error) {
+        console.error('Error loading config:', error);
+      }
+    };
+    
+    loadVideos();
+    loadConfig();
+  }, [loadVideos]);
 
   const handleDeleteVideo = async (videoId: string) => {
     if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
@@ -78,6 +86,22 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
     }
 
     try {
+      // Find the index of the video being deleted
+      const deletedIndex = recordings.findIndex(v => v.id === videoId);
+      
+      // Determine which video to select after deletion
+      let videoToSelectAfterDelete: string | undefined;
+      if (recordings.length > 1) {
+        if (deletedIndex > 0) {
+          // Select the video above (previous in list)
+          videoToSelectAfterDelete = recordings[deletedIndex - 1].id;
+        } else {
+          // If deleting the first video, select the next one (which will become first)
+          videoToSelectAfterDelete = recordings[deletedIndex + 1].id;
+        }
+      }
+      // If only one video, videoToSelectAfterDelete stays undefined (will select none)
+
       const response = await fetch(`${API_BASE_URL}/videos/${videoId}/delete`, {
         method: 'DELETE'
       });
@@ -85,13 +109,8 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
       const data = await response.json();
       
       if (data.success) {
-        // Reload videos after deletion
-        await loadVideos();
-        
-        // If current video was deleted, clear it
-        if (currentVideo?.id === videoId) {
-          setCurrentVideo(recordings.length > 1 ? recordings.find(v => v.id !== videoId) || null : null);
-        }
+        // Reload videos and select the appropriate one
+        await loadVideos(videoToSelectAfterDelete);
       } else {
         setError(data.error || 'Failed to delete video');
       }
@@ -126,7 +145,7 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
       
       if (data.success) {
         // Reload videos after rename
-        await loadVideos();
+        await loadVideos(editingId);
         
         // Update current video if it was renamed
         if (currentVideo?.id === editingId) {
@@ -298,7 +317,7 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
 
                 <div className="space-y-2">
                   <button
-                    onClick={loadVideos}
+                    onClick={() => loadVideos()}
                     disabled={loading}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:opacity-50"
                   >
