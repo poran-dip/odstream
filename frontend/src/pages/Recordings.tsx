@@ -4,6 +4,7 @@ import ToastDisplay from '../components/ui/ToastDisplay';
 import PageHeader from '../components/PageHeader';
 import VideoContainer from '../components/VideoContainer';
 import { formatDate, formatFileSize } from '../utils/formatters';
+import Footer from '../components/Footer';
 
 interface VideoFile {
   id: string;
@@ -274,7 +275,7 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
             bottomContent={
               currentVideo ? (
                 <>
-                  <h3 className="text-lg font-semibold text-slate-200 mb-2">{currentVideo.name}</h3>
+                  <h3 className="text-lg font-semibold text-slate-200 mb-2 truncate max-w-full">{currentVideo.name}</h3>
                   <div className="flex items-center space-x-4 text-slate-400">
                     <span>{formatFileSize(currentVideo.size)}</span>
                     <span>•</span>
@@ -439,6 +440,8 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
             </div>
           </div>
         </div>
+
+        <Footer />
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { formatElapsedTime } from '../utils/formatters';
 import { detectionApi } from '../utils/api';
 import { storageUtils, DEFAULT_SETTINGS, type CameraSource, type VideoSettings } from '../utils/storage';
 import { API_BASE_URL, DEFAULT_SOURCES } from '../utils/config';
+import Footer from '../components/Footer';
 
 function ObjectDetectionPage() {
   const [isDetecting, setIsDetecting] = useState<boolean>(false)
@@ -441,6 +442,7 @@ function ObjectDetectionPage() {
               {/* Camera Source Dropdown - takes most space */}
               <div className="relative flex-1 lg:w-64 min-w-0">
                 <button
+                  title="Camera source"
                   onClick={() => setShowSourceDropdown(!showSourceDropdown)}
                   disabled={isLoadingSource}
                   aria-expanded={showSourceDropdown}
@@ -475,12 +477,14 @@ function ObjectDetectionPage() {
               {/* Settings and Folder buttons container */}
               <div className="flex items-center space-x-3 flex-shrink-0">
                 <button
+                  title="Settings"
                   onClick={() => setShowSettings(true)}
                   className="bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105"
                 >
                   <Settings className="w-5 h-5 text-slate-300" />
                 </button>
                 <button
+                  title="Recordings"
                   onClick={() => navigate('/recordings')}
                   className="bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105"
                 >
@@ -657,6 +661,8 @@ function ObjectDetectionPage() {
             </div>
           </div>
         </div>
+
+        <Footer />
 
         {/* Settings Modal */}
         {showSettings && (
