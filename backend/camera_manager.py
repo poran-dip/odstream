@@ -758,6 +758,10 @@ class CameraManager:
         failed_frames = 0
         max_failed_frames = 30
 
+        fps_counter = 0
+        fps_timer = time.time()
+        fps_interval = 1.0  # print FPS every 1 second
+
         while True:
             if not self.is_camera_active():
                 print("Camera stopped, ending stream...")
@@ -774,7 +778,6 @@ class CameraManager:
                     break
 
                 if self.remote_camera:
-                    # For remote sources, continue trying
                     time.sleep(0.1)
                     continue
                 else:
@@ -783,6 +786,17 @@ class CameraManager:
 
             # Reset failed frames counter on successful frame
             failed_frames = 0
+
+            # ----- FPS calculation -----
+            fps_counter += 1
+            current_time = time.time()
+            elapsed = current_time - fps_timer
+            if elapsed >= fps_interval:
+                fps = fps_counter / elapsed
+                print(f"[FPS] {fps:.2f}")
+                fps_counter = 0
+                fps_timer = current_time
+            # ---------------------------
 
             try:
                 # Apply YOLO detection only when detection is enabled (during recording)
@@ -795,7 +809,6 @@ class CameraManager:
                     if results:
                         self._log_detection(results)
                 else:
-                    # For raw video streaming or remote cameras, use frame as-is
                     annotated_frame = frame
 
                 # Save frame to video if recording
@@ -811,7 +824,6 @@ class CameraManager:
 
                 if ret:
                     frame_bytes = buffer.tobytes()
-
                     yield (
                         b"--frame\r\n"
                         b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"

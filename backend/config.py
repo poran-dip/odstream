@@ -82,7 +82,7 @@ class Config:
     CAMERA_INDEX = 0
     CAMERA_WIDTH = 640
     CAMERA_HEIGHT = 480
-    CAMERA_FPS = 30
+    CAMERA_FPS = 60
 
     # Video settings configuration
     DEFAULT_VIDEO_SETTINGS = {

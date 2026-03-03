@@ -99,7 +99,7 @@ uwod-remote
 ### Phase 3 – Deployment & Polish
 
 * [ ] Auto-deploy scripts for Jetson + host
-* [x] Optional LAN streaming support (e.g., WebRTC/MJPEG)
+* [x] LAN streaming support (MJPEG)
 * [x] Basic mobile responsiveness
 
 ---
@@ -112,8 +112,8 @@ uwod-remote
 
 **Mentors:**
 
-* Divya (EEE), IIT Guwahati
-* Pravez (CSE), IIT Guwahati
+* Divya Jyoti (PhD Scholar, EEE, IIT Guwahati)
+* Pravez Aziz Baruah (PhD Scholar, CSE, IIT Guwahati)
 
 **Supervisor:**
 * Dr. Chayan Bawal (HoD, EEE, IIT Guwahati)
@@ -124,7 +124,7 @@ uwod-remote
 
 * Minimal dependencies, modern stack
 * Recording format: `YYYYMMDD-HHMM.mp4` (e.g., `20250704-1315.mp4`)
-* Network-based live stream and object detection are now supported (improvements needed)
+* Network-based live stream and object detection are now supported
 
 ---
 
