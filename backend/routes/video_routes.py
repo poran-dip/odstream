@@ -1,6 +1,6 @@
-from flask import Blueprint, jsonify, request, send_file, abort
 from pathlib import Path
 import mimetypes
+from flask import Blueprint, jsonify, request, send_file, abort
 from video_manager import VideoManager
 
 # Create blueprint
@@ -57,8 +57,8 @@ def rename_video(filename):
 
     if success:
         return jsonify({"success": True, "message": message, "new_name": new_name})
-    else:
-        return jsonify({"success": False, "error": message}), 400
+
+    return jsonify({"success": False, "error": message}), 400
 
 
 @video_bp.route("/api/videos/<filename>/delete", methods=["DELETE"])
@@ -68,8 +68,8 @@ def delete_video(filename):
 
     if success:
         return jsonify({"success": True, "message": message})
-    else:
-        return jsonify({"success": False, "error": message}), 400
+
+    return jsonify({"success": False, "error": message}), 400
 
 
 def get_video_manager():

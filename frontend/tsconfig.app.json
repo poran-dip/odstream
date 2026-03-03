@@ -23,6 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"],
-  "types": ["./src/react-extensions.d.ts"]
+  "include": ["src"]
 }

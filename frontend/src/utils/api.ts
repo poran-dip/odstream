@@ -42,7 +42,7 @@ class RequestQueue {
 
   private async process() {
     if (this.processing || this.queue.length === 0) return;
-    
+
     this.processing = true;
     while (this.queue.length > 0) {
       const request = this.queue.shift()!;
@@ -61,9 +61,9 @@ export const detectionApi = {
   startCamera: async (source: CameraSource): Promise<ApiResponse> => {
     return cameraQueue.add(async () => {
       const response = await fetch(`${API_BASE_URL}/start_camera`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source }),
       });
       return response.json();
     });
@@ -81,13 +81,13 @@ export const detectionApi = {
     return response.json();
   },
 
-  getCameraStatus: async (): Promise<{ 
-    active: boolean; 
-    source?: CameraSource; 
-    detection_enabled?: boolean; 
-    recording?: boolean; 
-    model_loaded?: boolean; 
-    error?: string 
+  getCameraStatus: async (): Promise<{
+    active: boolean;
+    source?: CameraSource;
+    detection_enabled?: boolean;
+    recording?: boolean;
+    model_loaded?: boolean;
+    error?: string;
   }> => {
     try {
       const response = await fetch(`${API_BASE_URL}/camera_status`);
@@ -97,16 +97,16 @@ export const detectionApi = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Get camera status error:', error);
-      return { active: false, error: 'Failed to get camera status' };
+      console.error("Get camera status error:", error);
+      return { active: false, error: "Failed to get camera status" };
     }
   },
 
   changeSource: async (source: CameraSource): Promise<ApiResponse> => {
     return cameraQueue.add(async () => {
       const res = await fetch(`${API_BASE_URL}/change_camera_source`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ source }),
       });
       return res.json();
@@ -116,11 +116,11 @@ export const detectionApi = {
   startRecording: async (outputPath?: string): Promise<ApiResponse> => {
     return recordingQueue.add(async () => {
       const response = await fetch(`${API_BASE_URL}/start_recording`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          output_path: outputPath
-        })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          output_path: outputPath,
+        }),
       });
       return response.json();
     });
@@ -129,8 +129,8 @@ export const detectionApi = {
   stopRecording: async (): Promise<ApiResponse<StopRecordingResponse>> => {
     return recordingQueue.add(async () => {
       const response = await fetch(`${API_BASE_URL}/stop_recording`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
       return response.json();
     });
@@ -138,16 +138,18 @@ export const detectionApi = {
 
   takeSnapshot: async (): Promise<ApiResponse> => {
     const response = await fetch(`${API_BASE_URL}/snapshot`, {
-      method: 'POST',
+      method: "POST",
     });
     return response.json();
   },
 
-  updateVideoSettings: async (settings: Partial<VideoSettings>): Promise<ApiResponse> => {
+  updateVideoSettings: async (
+    settings: Partial<VideoSettings>,
+  ): Promise<ApiResponse> => {
     const response = await fetch(`${API_BASE_URL}/update_video_settings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings)
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
     });
     return response.json();
   },
@@ -155,7 +157,7 @@ export const detectionApi = {
   getVideoSettings: async (): Promise<ApiResponse<VideoSettings>> => {
     const response = await fetch(`${API_BASE_URL}/video_settings`);
     return response.json();
-  }
+  },
 };
 
 // Videos API
@@ -168,18 +170,21 @@ export const videosApi = {
   deleteVideo: async (videoId: string): Promise<ApiResponse> => {
     return videoQueue.add(async () => {
       const response = await fetch(`${API_BASE_URL}/videos/${videoId}/delete`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
       return response.json();
     });
   },
 
-  renameVideo: async (videoId: string, newName: string): Promise<ApiResponse<{ new_name: string }>> => {
+  renameVideo: async (
+    videoId: string,
+    newName: string,
+  ): Promise<ApiResponse<{ new_name: string }>> => {
     return videoQueue.add(async () => {
       const response = await fetch(`${API_BASE_URL}/videos/${videoId}/rename`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ new_name: newName })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ new_name: newName }),
       });
       return response.json();
     });
@@ -187,7 +192,7 @@ export const videosApi = {
 
   getVideoUrl: (filename: string): string => {
     return `${API_BASE_URL}/videos/${encodeURIComponent(filename)}`;
-  }
+  },
 };
 
 // Config API
@@ -197,12 +202,14 @@ export const configApi = {
     return response.json();
   },
 
-  setVideoPath: async (path: string): Promise<ApiResponse<{ path: string }>> => {
+  setVideoPath: async (
+    path: string,
+  ): Promise<ApiResponse<{ path: string }>> => {
     const response = await fetch(`${API_BASE_URL}/config/path`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
     });
     return response.json();
-  }
+  },
 };

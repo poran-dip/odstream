@@ -1,24 +1,24 @@
-export type CameraType = 'local' | 'remote'
+export type CameraType = "local" | "remote";
 
 export interface BaseCamera {
-  id: string
-  name: string
-  type: CameraType
+  id: string;
+  name: string;
+  type: CameraType;
 }
 
 export interface LocalCamera extends BaseCamera {
-  type: 'local'
-  index: number
+  type: "local";
+  index: number;
 }
 
 export interface RemoteCamera extends BaseCamera {
-  type: 'remote'
-  url: string
+  type: "remote";
+  url: string;
 }
 
-export type CameraSource = LocalCamera | RemoteCamera
+export type CameraSource = LocalCamera | RemoteCamera;
 
-const CUSTOM_SOURCES_KEY = 'customCameraSources';
+const CUSTOM_SOURCES_KEY = "customCameraSources";
 
 export const storageUtils = {
   getCustomSources: (): CameraSource[] => {
@@ -26,7 +26,7 @@ export const storageUtils = {
       const saved = localStorage.getItem(CUSTOM_SOURCES_KEY);
       return saved ? JSON.parse(saved) : [];
     } catch (error) {
-      console.error('Failed to parse custom sources:', error);
+      console.error("Failed to parse custom sources:", error);
       return [];
     }
   },
@@ -35,7 +35,7 @@ export const storageUtils = {
     try {
       localStorage.setItem(CUSTOM_SOURCES_KEY, JSON.stringify(sources));
     } catch (error) {
-      console.error('Failed to save custom sources:', error);
+      console.error("Failed to save custom sources:", error);
     }
   },
 
@@ -43,22 +43,22 @@ export const storageUtils = {
     const newSource: RemoteCamera = {
       id: Date.now().toString(),
       name: name.trim(),
-      type: 'remote',
-      url: url.trim()
+      type: "remote",
+      url: url.trim(),
     };
-    
+
     const existingSources = storageUtils.getCustomSources();
     const updatedSources = [...existingSources, newSource];
     storageUtils.saveCustomSources(updatedSources);
-    
+
     return newSource;
   },
 
   removeCustomSource: (id: string): void => {
     const existingSources = storageUtils.getCustomSources();
-    const updatedSources = existingSources.filter(source => source.id !== id);
+    const updatedSources = existingSources.filter((source) => source.id !== id);
     storageUtils.saveCustomSources(updatedSources);
-  }
+  },
 };
 
 export interface VideoSettings {
@@ -72,5 +72,5 @@ export const DEFAULT_SETTINGS: VideoSettings = {
   brightness: 0,
   contrast: 1.0,
   saturation: 1.0,
-  annotateYOLO: false
+  annotateYOLO: false,
 };

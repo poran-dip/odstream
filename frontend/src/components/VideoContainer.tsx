@@ -1,5 +1,5 @@
-import { Camera } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Camera } from "lucide-react";
+import type { ReactNode } from "react";
 
 interface VideoContainerProps {
   children?: ReactNode;
@@ -11,14 +11,14 @@ interface VideoContainerProps {
   className?: string;
 }
 
-const VideoContainer: React.FC<VideoContainerProps> = ({ 
-  children, 
-  showPlaceholder, 
-  placeholderTitle, 
+const VideoContainer: React.FC<VideoContainerProps> = ({
+  children,
+  showPlaceholder,
+  placeholderTitle,
   placeholderDescription,
   statusIndicators = null,
   bottomContent = null,
-  className = ""
+  className = "",
 }) => {
   return (
     <div className={`lg:col-span-3 ${className}`}>
@@ -39,7 +39,7 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
           ) : (
             children
           )}
-          
+
           {/* Status Indicators */}
           {statusIndicators && (
             <div className="absolute top-4 left-4 flex space-x-2">
@@ -48,7 +48,7 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
           )}
         </div>
       </div>
-      
+
       {/* Bottom Content */}
       {bottomContent && (
         <div className="mt-6 bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl p-6">

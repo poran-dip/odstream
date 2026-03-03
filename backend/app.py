@@ -1,3 +1,5 @@
+import socket
+from pathlib import Path
 from flask import Flask
 from flask_socketio import SocketIO
 from flask_cors import CORS
@@ -6,8 +8,6 @@ from routes.video_routes import video_bp, get_video_manager
 from routes.camera_routes import camera_bp, init_socketio, get_camera_manager
 from routes.config_routes import config_bp
 from routes.socket_events import register_socket_events
-import socket
-from pathlib import Path
 
 
 def get_local_ip():
@@ -44,7 +44,7 @@ export const API_URL = "{ip_address}";
         runtime_env_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write the content to the file
-        with open(runtime_env_path, "w") as f:
+        with open(runtime_env_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         print(f"✓ Generated runtime-env.ts with API_URL: http://{ip_address}:{port}")

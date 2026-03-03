@@ -8,13 +8,13 @@ camera_bp = Blueprint("camera", __name__)
 camera_manager = CameraManager()
 
 # This will be injected by the main app
-socketio = None
+SOCKETIO = None
 
 
 def init_socketio(socketio_instance):
     """Initialize socketio instance for this blueprint"""
-    global socketio
-    socketio = socketio_instance
+    global SOCKETIO
+    SOCKETIO = socketio_instance
 
 
 @camera_bp.route("/api/start_camera", methods=["POST"])
@@ -55,8 +55,8 @@ def start_camera():
 
     if success:
         # Broadcast to all connected clients
-        if socketio:
-            socketio.emit(
+        if SOCKETIO:
+            SOCKETIO.emit(
                 "camera_status",
                 {
                     "active": True,
@@ -66,8 +66,8 @@ def start_camera():
             )
 
         return jsonify({"message": message, "source": camera_manager.camera_source})
-    else:
-        return jsonify({"error": message}), 500
+
+    return jsonify({"error": message}), 500
 
 
 @camera_bp.route("/api/change_camera_source", methods=["POST"])
@@ -104,8 +104,8 @@ def change_camera_source():
 
     if success:
         # Broadcast to all connected clients
-        if socketio:
-            socketio.emit(
+        if SOCKETIO:
+            SOCKETIO.emit(
                 "camera_status",
                 {
                     "active": True,
@@ -121,8 +121,8 @@ def change_camera_source():
                 "source": camera_manager.camera_source,
             }
         )
-    else:
-        return jsonify({"success": False, "error": message}), 500
+
+    return jsonify({"success": False, "error": message}), 500
 
 
 @camera_bp.route("/api/stop_camera")
@@ -132,14 +132,14 @@ def stop_camera():
 
     if success:
         # Broadcast to all connected clients
-        if socketio:
-            socketio.emit(
+        if SOCKETIO:
+            SOCKETIO.emit(
                 "camera_status", {"active": False, "source": None, "message": message}
             )
 
         return jsonify({"message": message})
-    else:
-        return jsonify({"error": message}), 500
+
+    return jsonify({"error": message}), 500
 
 
 @camera_bp.route("/api/is_camera_active")
@@ -158,13 +158,13 @@ def is_camera_active():
                 },
             }
         )
-    else:
-        return jsonify(
-            {
-                "message": "Camera inactive",
-                "data": {"active": False, "source": None, "detection_enabled": False},
-            }
-        )
+
+    return jsonify(
+        {
+            "message": "Camera inactive",
+            "data": {"active": False, "source": None, "detection_enabled": False},
+        }
+    )
 
 
 @camera_bp.route("/api/video_feed")
@@ -190,8 +190,8 @@ def take_snapshot():
 
     if success:
         # Broadcast snapshot event to all connected clients
-        if socketio:
-            socketio.emit(
+        if SOCKETIO:
+            SOCKETIO.emit(
                 "snapshot_taken",
                 {
                     "success": True,
@@ -209,8 +209,8 @@ def take_snapshot():
                 "source": camera_manager.camera_source,
             }
         )
-    else:
-        return jsonify({"success": False, "error": message}), 400
+
+    return jsonify({"success": False, "error": message}), 400
 
 
 @camera_bp.route("/api/start_recording", methods=["POST"])
@@ -223,8 +223,8 @@ def start_recording():
 
     if success:
         # Broadcast to all connected clients
-        if socketio:
-            socketio.emit(
+        if SOCKETIO:
+            SOCKETIO.emit(
                 "recording_status",
                 {
                     "recording": True,
@@ -243,8 +243,8 @@ def start_recording():
                 "source": camera_manager.camera_source,
             }
         )
-    else:
-        return jsonify({"success": False, "error": message}), 400
+
+    return jsonify({"success": False, "error": message}), 400
 
 
 @camera_bp.route("/api/stop_recording", methods=["POST"])
@@ -260,8 +260,8 @@ def stop_recording():
 
     if success:
         # Broadcast to all connected clients
-        if socketio:
-            socketio.emit(
+        if SOCKETIO:
+            SOCKETIO.emit(
                 "recording_status",
                 {
                     "recording": False,
@@ -282,8 +282,8 @@ def stop_recording():
                 "source": camera_manager.camera_source,
             }
         )
-    else:
-        return jsonify({"success": False, "error": message}), 400
+
+    return jsonify({"success": False, "error": message}), 400
 
 
 @camera_bp.route("/api/recording_status", methods=["GET"])
@@ -360,8 +360,8 @@ def update_video_settings():
         }
 
         # Broadcast to all connected clients
-        if socketio:
-            socketio.emit(
+        if SOCKETIO:
+            SOCKETIO.emit(
                 "video_settings_updated",
                 {
                     "data": current_settings,

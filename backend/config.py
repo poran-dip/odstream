@@ -28,7 +28,7 @@ def read_api_url_from_runtime_env():
     runtime_env_path = os.path.join(parent_dir, "shared", "runtime-env.ts")
 
     try:
-        with open(runtime_env_path, "r") as file:
+        with open(runtime_env_path, "r", encoding="utf-8") as file:
             content = file.read()
 
         # Extract API_URL using regex
@@ -37,8 +37,7 @@ def read_api_url_from_runtime_env():
 
         if match:
             return match.group(1)
-        else:
-            raise ValueError("API_URL not found in runtime-env.ts")
+        raise ValueError("API_URL not found in runtime-env.ts")
 
     except FileNotFoundError:
         raise FileNotFoundError(

@@ -1,18 +1,18 @@
 import sys
 import warnings
-import cv2
-import requests
 import threading
 import time
 import platform
+from pathlib import Path
+from datetime import datetime
 
+import cv2
+import requests
+import numpy as np
 import torch
 from ultralytics import YOLO
 
 from config import Config
-from datetime import datetime
-from pathlib import Path
-import numpy as np
 
 
 class CameraManager:
@@ -105,7 +105,7 @@ class CameraManager:
             # Ensure directory exists
             log_path.parent.mkdir(parents=True, exist_ok=True)
 
-            self.log_file = open(log_path, "w")
+            self.log_file = open(log_path, "w", encoding="utf-8")
             self.log_file.write(
                 f"Detection Log Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             )
@@ -268,11 +268,10 @@ class CameraManager:
         # Handle different URL patterns
         if video_feed_url.endswith("/video_feed"):
             return video_feed_url[: -len("/video_feed")]
-        elif video_feed_url.endswith("/video"):
+        if video_feed_url.endswith("/video"):
             return video_feed_url[: -len("/video")]
-        else:
-            # If no specific endpoint, assume the URL is already the base
-            return video_feed_url
+        # If no specific endpoint, assume the URL is already the base
+        return video_feed_url
 
     def _start_remote_detection(self):
         """Start detection on remote camera source"""
@@ -558,7 +557,7 @@ class CameraManager:
                     and hasattr(results[0], "plot")
                 ):
                     return results[0].plot(), results
-                elif hasattr(results, "plot"):
+                if hasattr(results, "plot"):
                     return results.plot(), results
 
             elif Config.YOLO_MODEL_VERSION == "v5":
@@ -612,8 +611,8 @@ class CameraManager:
             if success:
                 print(f"Snapshot saved: {filename}")
                 return True, f"Snapshot saved: {filename}", str(output_path)
-            else:
-                return False, "Failed to save snapshot", None
+
+            return False, "Failed to save snapshot", None
 
         except Exception as e:
             print(f"Error taking snapshot: {e}")
@@ -780,9 +779,9 @@ class CameraManager:
                 if self.remote_camera:
                     time.sleep(0.1)
                     continue
-                else:
-                    print("Stream ended (camera stopped or disconnected)")
-                    break
+
+                print("Stream ended (camera stopped or disconnected)")
+                break
 
             # Reset failed frames counter on successful frame
             failed_frames = 0
