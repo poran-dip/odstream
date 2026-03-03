@@ -35,7 +35,7 @@ export const API_URL = "{ip_address}";
 """
 
     # Determine the path to the runtime-env.ts file
-    # Assuming the structure: wod/backend/app.py and uwod/shared/runtime-env.ts
+    # Assuming the structure: wod/backend/app.py and odstream/shared/runtime-env.ts
     current_dir = Path(__file__).parent
     runtime_env_path = current_dir.parent / "shared" / "runtime-env.ts"
 

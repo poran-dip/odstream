@@ -24,7 +24,7 @@ The interface supports real-time control, recording, playback, and Python-based 
 * Display and playback saved recordings
 * Trigger and display YOLO-based object detection from the frontend
 * Frontend/backend integration (Vite + Flask)
-* Supports remote backend running on a Jetson Nano via [uwod-remote](https://github.com/poran-dip/uwod-remote)
+* Supports remote backend running on a Jetson Nano via [odstream-remote](https://github.com/poran-dip/odstream-remote)
 
 ---
 
@@ -49,7 +49,7 @@ See [git & workflow instructions here](docs/git-setup.md)
 ## Directory Structure (WIP)
 
 ```bash
-uwod-rc
+odstream
 ├── .gitignore           # Self explanatory
 ├── docs                 # Dev logs, documentation
 │   └── git-setup.md     # Project setup and git guide
@@ -69,7 +69,7 @@ uwod-rc
             └── ui       # UI primitives
 
 # Jetson-side remote backend (separate repo)
-uwod-remote
+odstream-remote
 ├── .gitignore           # As per usual
 ├── app.py               # Jetson Flask entrypoint
 ├── jetson_camera.py     # Stream handling and detection logic
@@ -98,7 +98,7 @@ uwod-remote
 
 ### Phase 3 – Deployment & Polish
 
-* [ ] Auto-deploy scripts for Jetson + host
+* [x] Auto-deploy scripts for Jetson + host
 * [x] LAN streaming support (MJPEG)
 * [x] Basic mobile responsiveness
 
@@ -106,17 +106,17 @@ uwod-remote
 
 ## Contributors
 
-* [**Poran Dip**](https://github.com/poran-dip)
-* Ruhan Roushan Islam
-* Pooja Basumatary
+* [**Poran Dip**](https://github.com/poran-dip) (primary developer)
+* [**Ruhan Roushan Islam**](https://github.com/roushan-ruhan) (multi-model integration)
+* [**Pooja Basumatary**](https://www.linkedin.com/in/pooja-basumatary-8a322a361/) (testing & presentation)
 
 **Mentors:**
 
 * Divya Jyoti (PhD Scholar, EEE, IIT Guwahati)
-* Pravez Aziz Baruah (PhD Scholar, CSE, IIT Guwahati)
+* Parvez Aziz Boruah (PhD Scholar, CSE, IIT Guwahati)
 
 **Supervisor:**
-* Dr. Chayan Bawal (HoD, EEE, IIT Guwahati)
+* Dr. Chayan Bhawal (Professor, EEE, IIT Guwahati)
 
 ---
 

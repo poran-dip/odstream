@@ -22,9 +22,9 @@ DEFAULT_LOG_PATH = Path(__file__).resolve().parent.parent / "shared" / "detectio
 
 def read_api_url_from_runtime_env():
     """Read API_URL from the runtime-env.ts file"""
-    # Navigate from backend to uwod-rc/shared/runtime-env.ts
+    # Navigate from backend to odstream/shared/runtime-env.ts
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(current_dir)  # Go up from backend to uwod-rc
+    parent_dir = os.path.dirname(current_dir)  # Go up from backend to odstream
     runtime_env_path = os.path.join(parent_dir, "shared", "runtime-env.ts")
 
     try:

@@ -7,13 +7,13 @@
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/poran-dip/uwod-rc.git
+git clone https://github.com/poran-dip/odstream.git
 ```
 
 2. Navigate into the project directory:
 
 ```bash
-cd uwod-rc
+cd odstream
 ```
 
 ---
@@ -168,5 +168,5 @@ git pull
 ### Add a remote (if not already set):
 
 ```bash
-git remote add origin https://github.com/poran-dip/uwod-rc.git
+git remote add origin https://github.com/poran-dip/odstream.git
 ```
