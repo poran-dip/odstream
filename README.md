@@ -55,25 +55,35 @@ odstream
 │   └── git-setup.md     # Project setup and git guide
 ├── shared
 │   └── recordings       # Saved .mp4 files
+├── run_app.py           # Desktop launcher (starts backend + frontend)
+├── launcher             # Launcher pieces: ui, output, processes, theme
 ├── backend
-│   ├── utils            # Python helpers (planned)
-│   ├── requirements.txt # Backend dependencies
-│   └── app.py           # Flask entrypoint
+│   ├── app.py           # Flask entrypoint
+│   ├── camera_manager.py # CameraManager (stitches the camera/ mixins)
+│   ├── camera           # model, remote stream, lifecycle, frames, capture, detection log
+│   ├── routes           # Flask blueprints
+│   │   ├── camera_routes.py # Registers routes/camera/* on the camera blueprint
+│   │   └── camera       # control, recording, settings, validation, state
+│   ├── config.py        # App / camera / YOLO configuration
+│   └── requirements.txt # Backend dependencies
 └── frontend
     ├── public           # Favicon, other global assets
     └── src              # Everything app related
-        ├── pages        # Route-based page components
-        ├── utils        # Helpers functions (planned)
+        ├── pages        # Route-based pages (thin layouts)
+        ├── hooks        # Page state & logic (objectDetection/, recordings/)
+        ├── utils        # Helpers; api/ holds the backend API client
         ├── assets       # Assets for components
         └── components   # Reusable UI components
+            ├── detection   # ObjectDetection page pieces (+ settings/)
+            ├── recordings  # Recordings page pieces
             └── ui       # UI primitives
 
 # Jetson-side remote backend (separate repo)
 odstream-remote
-├── .gitignore           # As per usual
 ├── app.py               # Jetson Flask entrypoint
-├── jetson_camera.py     # Stream handling and detection logic
-├── jetson_routes.py     # Defines all Flask API endpoints
+├── camera_routes.py     # Defines all Flask API endpoints
+├── remote_camera.py     # RemoteCameraManager (stitches camera/ mixins)
+├── camera               # model, realsense, recording, streaming
 └── requirements.txt     # Dependencies for remote backend
 ```
 ---
