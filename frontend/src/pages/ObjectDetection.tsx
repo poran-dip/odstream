@@ -1,5 +1,3 @@
-import { io } from "socket.io-client";
-import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -11,441 +9,55 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import ToastDisplay, {
-  type ToastDisplayProps,
-  type ToastType,
-} from "../components/ui/ToastDisplay";
+import ToastDisplay from "../components/ui/ToastDisplay";
 import PageHeader from "../components/PageHeader";
 import VideoContainer from "../components/VideoContainer";
 import { formatElapsedTime } from "../utils/formatters";
-import { detectionApi } from "../utils/api";
-import {
-  storageUtils,
-  DEFAULT_SETTINGS,
-  type CameraSource,
-  type VideoSettings,
-} from "../utils/storage";
-import { API_BASE_URL, DEFAULT_SOURCES } from "../utils/config";
+import { DEFAULT_SOURCES } from "../utils/config";
 import Footer from "../components/Footer";
+import { useObjectDetection } from "../hooks/objectDetection/useObjectDetection";
 
 function ObjectDetectionPage() {
-  const [isDetecting, setIsDetecting] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [toast, setToast] = useState<ToastDisplayProps | null>(null);
-  const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [showSourceDropdown, setShowSourceDropdown] = useState<boolean>(false);
-  const [selectedSource, setSelectedSource] = useState<CameraSource | null>(
-    null,
-  );
-  const [isLoadingSource, setIsLoadingSource] = useState<boolean>(true);
-  const [customSources, setCustomSources] = useState<CameraSource[]>([]);
-  const [newSourceName, setNewSourceName] = useState<string>("");
-  const [newSourceUrl, setNewSourceUrl] = useState<string>("");
-  const [settings, setSettings] = useState<VideoSettings>(DEFAULT_SETTINGS);
-  const [detectionStartTime, setDetectionStartTime] = useState(Number);
-  const [showStopConfirmation, setShowStopConfirmation] =
-    useState<boolean>(false);
-
-  const imgRef = useRef<HTMLImageElement>(null);
   const navigate = useNavigate();
 
-  const showToast = (message: string, type: ToastType = "error") => {
-    setToast({ message, type });
-  };
-
-  const findMatchingSource = (
-    backendSource: CameraSource,
-    availableSources: CameraSource[],
-  ): CameraSource | null => {
-    return (
-      availableSources.find((src) => {
-        if (src.type === "local" && backendSource.type === "local") {
-          return src.index === backendSource.index;
-        }
-        if (src.type === "remote" && backendSource.type === "remote") {
-          return src.url === backendSource.url;
-        }
-        return false;
-      }) || null
-    );
-  };
-
-  // Load current source from backend on component mount
-  useEffect(() => {
-    const loadCurrentSource = async () => {
-      setIsLoadingSource(true);
-      try {
-        // First load custom sources so we have the complete list
-        const loadedCustomSources = storageUtils.getCustomSources();
-        setCustomSources(loadedCustomSources);
-
-        const response = await detectionApi.getCameraStatus();
-
-        if (response.source) {
-          // Find matching source from all available sources (including newly loaded custom ones)
-          const allSources = [...DEFAULT_SOURCES, ...loadedCustomSources];
-          const matchedSource = findMatchingSource(response.source, allSources);
-
-          if (matchedSource) {
-            console.log("Loaded current source from backend:", matchedSource);
-            setSelectedSource(matchedSource);
-          } else {
-            console.warn(
-              "Backend source not found in available sources:",
-              response.source,
-            );
-            console.log("Available sources:", allSources);
-
-            // Create a temporary source object if it's not in our predefined list
-            // This handles cases where backend has a source not in our DEFAULT_SOURCES
-            const tempSource: CameraSource =
-              response.source.type === "local"
-                ? {
-                    id: `temp-local-${response.source.index}`,
-                    name: `Camera ${response.source.index}`,
-                    type: "local",
-                    index: response.source.index,
-                  }
-                : {
-                    id: `temp-remote-${Date.now()}`,
-                    name: "Remote Camera",
-                    type: "remote",
-                    url: response.source.url,
-                  };
-
-            console.log("Using temporary source:", tempSource);
-            setSelectedSource(tempSource);
-          }
-
-          // Also set initial states from the camera status
-          setIsDetecting(response.active || false);
-          setIsRecording(response.recording || false);
-          if (response.active) {
-            setDetectionStartTime(Date.now());
-          }
-        } else {
-          console.warn("No source in camera status response, using default");
-          setSelectedSource(DEFAULT_SOURCES[0]);
-        }
-
-        try {
-          const settingsResponse = await detectionApi.getVideoSettings();
-          if (settingsResponse.success && settingsResponse.data) {
-            setSettings(settingsResponse.data);
-          }
-        } catch (error) {
-          console.error("Error loading video settings:", error);
-        }
-      } catch (error) {
-        console.error("Error loading camera status:", error);
-        setSelectedSource(DEFAULT_SOURCES[0]);
-      } finally {
-        setIsLoadingSource(false);
-      }
-    };
-
-    loadCurrentSource();
-  }, []);
-
-  const getAllSources = (): CameraSource[] => {
-    return [...DEFAULT_SOURCES, ...customSources];
-  };
-
-  const addCustomSource = () => {
-    const name = newSourceName.trim();
-    const url = newSourceUrl.trim();
-
-    if (!name || !url) {
-      return showToast("Name and URL are required", "warning");
-    }
-    if (!url.includes(".")) return showToast("URL looks wrong?", "warning");
-
-    const newSource = storageUtils.addCustomSource(name, url);
-    setCustomSources((prev) => [...prev, newSource]);
-    showToast(`${name} added!`, "success");
-    setNewSourceName("");
-    setNewSourceUrl("");
-  };
-
-  const deleteCustomSource = (id: string) => {
-    const sourceToDelete = customSources.find((source) => source.id === id);
-
-    storageUtils.removeCustomSource(id);
-    setCustomSources((prev) => prev.filter((source) => source.id !== id));
-
-    // If the deleted source was selected, switch to webcam
-    if (selectedSource?.id === id) {
-      setSelectedSource(DEFAULT_SOURCES[0]);
-    }
-
-    const name = sourceToDelete?.name || "Source";
-    showToast(`"${name}" deleted!`, "success");
-  };
-
-  const updateVideoSettings = async (newSettings: Partial<VideoSettings>) => {
-    try {
-      setLoading(true);
-      const response = await detectionApi.updateVideoSettings(newSettings);
-
-      if (response.success) {
-        showToast("Video settings updated successfully!", "success");
-      } else {
-        showToast(response.error || "Failed to update video settings", "error");
-      }
-    } catch (error) {
-      console.error("Error updating video settings:", error);
-      showToast("Failed to update video settings", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isLoadingSource || !selectedSource) return;
-
-    const newSocket = io(API_BASE_URL.replace("/api", ""));
-
-    newSocket.on("connect", () => {
-      console.log("Connected to backend socket");
-    });
-
-    newSocket.on("disconnect", () => {
-      console.log("Disconnected from backend socket");
-    });
-
-    newSocket.on("camera_status", (data) => {
-      console.log("Camera status update:", data);
-
-      // Find matching source from all available sources
-      const allSources = [...DEFAULT_SOURCES, ...customSources];
-      const matchedSource = findMatchingSource(data.source, allSources);
-
-      if (matchedSource && matchedSource.id !== selectedSource?.id) {
-        console.log(
-          "Backend source changed, updating frontend to match:",
-          matchedSource,
-        );
-        setSelectedSource(matchedSource);
-      } else if (!matchedSource && data.source) {
-        // Handle case where backend source is not in our predefined sources
-        console.log(
-          "Backend using unknown source, creating temporary source:",
-          data.source,
-        );
-
-        const tempSource: CameraSource =
-          data.source.type === "local"
-            ? {
-                id: `temp-local-${data.source.index}`,
-                name: `Camera ${data.source.index}`,
-                type: "local",
-                index: data.source.index,
-              }
-            : {
-                id: `temp-remote-${Date.now()}`,
-                name: "Remote Camera",
-                type: "remote",
-                url: data.source.url,
-              };
-
-        setSelectedSource(tempSource);
-      }
-
-      if (data.active) {
-        setIsDetecting(true);
-        setDetectionStartTime(Date.now());
-
-        console.log("Camera active logged");
-
-        setTimeout(() => {
-          if (imgRef.current) {
-            const videoUrl = `${API_BASE_URL}/video_feed`;
-
-            console.log("Setting up MJPEG stream:", videoUrl);
-
-            imgRef.current.src = videoUrl;
-
-            imgRef.current.onload = () => {
-              console.log("MJPEG stream connected successfully");
-            };
-
-            imgRef.current.onerror = (e) => {
-              console.error("MJPEG stream error:", e);
-
-              setTimeout(() => {
-                if (imgRef.current) {
-                  console.log("Retrying MJPEG stream connection...");
-                  imgRef.current.src = videoUrl;
-                }
-              }, 2000);
-            };
-          }
-        }, 100);
-      } else {
-        setIsDetecting(false);
-        if (imgRef.current) {
-          imgRef.current.src = "";
-        }
-      }
-    });
-
-    newSocket.on("recording_status", (data) => {
-      console.log("Recording status update:", data);
-      setIsRecording(data.recording);
-    });
-
-    newSocket.on("video_settings_updated", (data) => {
-      console.log("Video settings update from socket:", data);
-      if (data.data) {
-        setSettings((prev) => ({ ...prev, ...data.data }));
-        // Show toast only if it's from another user (you can add logic to detect this)
-        if (data.message) {
-          showToast(data.message, "info");
-        }
-      }
-    });
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [customSources, selectedSource, isLoadingSource]);
-
-  const startDetection = async () => {
-    setLoading(true);
-
-    if (!selectedSource) {
-      showToast("Unable to start detection: No source was provided", "error");
-      return;
-    }
-
-    try {
-      const response = await detectionApi.startCamera(selectedSource);
-
-      if (response.message && !response.error) {
-        console.log("Detection start request sent");
-      } else {
-        showToast(response.error || response.message || "Something went wrong");
-      }
-    } catch (err) {
-      console.error("Start detection error:", err);
-      showToast("Failed to connect to backend");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStopDetectionClick = () => {
-    setShowStopConfirmation(true);
-  };
-
-  const confirmStopDetection = async () => {
-    setShowStopConfirmation(false);
-    setLoading(true);
-
-    try {
-      await detectionApi.stopCamera();
-      // Don't set state here - let the socket event handle it
-      console.log("Detection stop request sent");
-    } catch (err) {
-      console.error("Stop camera error:", err);
-      showToast("Failed to stop camera");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStartRecording = async () => {
-    if (!isDetecting) {
-      showToast("Please start detection first before recording");
-      return;
-    }
-
-    try {
-      setToast(null);
-      const response = await detectionApi.startRecording();
-
-      if (response.success) {
-        // Don't set state here - let the socket event handle it
-        console.log("Recording start request sent");
-      } else {
-        showToast(response.error || "Failed to start recording");
-      }
-    } catch (error) {
-      console.error("Error starting recording:", error);
-      showToast(
-        "Error starting recording: " +
-          (error instanceof Error ? error.message : String(error)),
-      );
-    }
-  };
-
-  const handleStopRecording = async () => {
-    try {
-      setToast(null);
-      const response = await detectionApi.stopRecording();
-
-      if (response.success) {
-        console.log("Recording stop request sent");
-      } else {
-        showToast(response.error || "Failed to stop recording");
-      }
-    } catch (error) {
-      console.error("Error stopping recording:", error);
-      showToast(
-        "Error stopping recording: " +
-          (error instanceof Error ? error.message : String(error)),
-      );
-    }
-  };
-
-  const handleTakeSnapshot = async () => {
-    try {
-      const response = await detectionApi.takeSnapshot();
-
-      if (response.success) {
-        // Show success message or notification
-        console.log("Snapshot taken:", response.message);
-        showToast("Snapshot taken!", "success");
-      } else {
-        showToast(response.error || "Snapshot failed");
-        console.error("Snapshot failed:", response.error);
-      }
-    } catch (error) {
-      console.error("Error taking snapshot:", error);
-      if (error instanceof Error) {
-        showToast("Error taking snapshot: " + error.message);
-      } else {
-        showToast("Error taking snapshot: " + String(error));
-      }
-    }
-  };
-
-  const handleSourceChange = async (source: CameraSource) => {
-    setLoading(true);
-    try {
-      const response = await detectionApi.changeSource(source);
-
-      if (response.success) {
-        console.log(response.message ?? "Camera source changed");
-        setToast(null);
-        setSelectedSource(source); // Update UI state
-        setShowSourceDropdown(false);
-
-        setTimeout(() => {
-          setIsDetecting(true);
-        }, 100);
-      } else {
-        console.error(response.error ?? response.message);
-        showToast(`Failed to change source to ${source.name}`);
-      }
-    } catch (err) {
-      console.error("Change camera source error:", err);
-      showToast("Failed to connect to backend");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // All state and handlers live in the hook; this component only renders
+  const {
+    isDetecting,
+    isRecording,
+    detectionStartTime,
+    selectedSource,
+    isLoadingSource,
+    loading,
+    toast,
+    setToast,
+    showSettings,
+    setShowSettings,
+    showSourceDropdown,
+    setShowSourceDropdown,
+    showStopConfirmation,
+    setShowStopConfirmation,
+    settings,
+    setSettings,
+    imgRef,
+    sources: {
+      customSources,
+      newSourceName,
+      setNewSourceName,
+      newSourceUrl,
+      setNewSourceUrl,
+      getAllSources,
+      addCustomSource,
+      deleteCustomSource,
+    },
+    startDetection,
+    handleStopDetectionClick,
+    confirmStopDetection,
+    handleSourceChange,
+    updateVideoSettings,
+    handleStartRecording,
+    handleStopRecording,
+    handleTakeSnapshot,
+  } = useObjectDetection();
 
   if (isLoadingSource || !selectedSource) {
     return (
