@@ -2,13 +2,13 @@
 // recording and video-settings changes so every open client stays in sync;
 // this hook applies those updates to the page state.
 
-import { useEffect, type RefObject } from "react";
+import { type RefObject, useEffect } from "react";
 import { io } from "socket.io-client";
-import { API_BASE_URL, DEFAULT_SOURCES } from "../../utils/config";
 import {
   createTempSource,
   findMatchingSource,
 } from "../../utils/cameraSources";
+import { API_BASE_URL, DEFAULT_SOURCES } from "../../utils/config";
 import type { DetectionContext } from "./types";
 
 const VIDEO_FEED_URL = `${API_BASE_URL}/video_feed`;
@@ -134,5 +134,17 @@ export function useDetectionSocket(ctx: DetectionContext) {
     };
     // Reconnect only when these change (setters/ref are stable)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customSources, selectedSource, isLoadingSource]);
+  }, [
+    customSources,
+    selectedSource,
+    isLoadingSource,
+    setSelectedSource,
+    showToast,
+    setIsRecording,
+    imgRef.current,
+    setIsDetecting,
+    setSettings,
+    setDetectionStartTime,
+    imgRef,
+  ]);
 }

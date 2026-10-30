@@ -1,7 +1,7 @@
 // One row in the video library: name + meta, or an inline rename input,
 // with play / rename / delete actions.
 
-import { Play, Trash2, Edit2, Check, X } from "lucide-react";
+import { Check, Edit2, Play, Trash2, X } from "lucide-react";
 import type { VideoFile } from "../../utils/api";
 import { formatDate, formatFileSize } from "../../utils/formatters";
 
@@ -31,6 +31,8 @@ export default function VideoListItem({
   onDelete,
 }: VideoListItemProps) {
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: row click is a mouse shortcut; the Play button is the keyboard path
+    // biome-ignore lint/a11y/noStaticElementInteractions: row click is a mouse shortcut; the Play button is the keyboard path
     <div
       className={`p-4 border-b border-slate-600/30 last:border-b-0 hover:bg-slate-700/30 transition-colors cursor-pointer ${
         isSelected ? "bg-slate-700/50" : ""
@@ -41,6 +43,8 @@ export default function VideoListItem({
         <div className="flex-1 min-w-0">
           {isEditing ? (
             // Inline rename (clicks here must not select the row)
+            // biome-ignore lint/a11y/useKeyWithClickEvents: only stops click propagation to the row
+            // biome-ignore lint/a11y/noStaticElementInteractions: only stops click propagation to the row
             <div
               className="flex items-center space-x-2"
               onClick={(e) => e.stopPropagation()}
@@ -51,15 +55,16 @@ export default function VideoListItem({
                 onChange={(e) => setEditingName(e.target.value)}
                 className="flex-1 px-2 py-1 border border-slate-600 rounded bg-slate-800 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onKeyDown={(e) => e.key === "Enter" && onRenameConfirm()}
-                autoFocus
               />
               <button
+                type="button"
                 onClick={onRenameConfirm}
                 className="p-1 text-green-400 hover:text-green-300 transition-colors"
               >
                 <Check className="h-4 w-4" />
               </button>
               <button
+                type="button"
                 onClick={onRenameCancel}
                 className="p-1 text-red-400 hover:text-red-300 transition-colors"
               >
@@ -82,11 +87,14 @@ export default function VideoListItem({
 
         {/* Row actions (hidden while renaming) */}
         {!isEditing && (
+          // biome-ignore lint/a11y/useKeyWithClickEvents: only stops click propagation to the row
+          // biome-ignore lint/a11y/noStaticElementInteractions: only stops click propagation to the row
           <div
             className="flex items-center space-x-1 ml-2"
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onPlay(video);
@@ -97,6 +105,7 @@ export default function VideoListItem({
               <Play className="h-4 w-4" />
             </button>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onRenameStart(video);
@@ -107,6 +116,7 @@ export default function VideoListItem({
               <Edit2 className="h-4 w-4" />
             </button>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(video.id);

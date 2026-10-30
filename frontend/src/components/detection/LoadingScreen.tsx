@@ -2,7 +2,7 @@
 
 export default function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white flex items-center justify-center animate-fade-in">
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 text-white flex items-center justify-center animate-fade-in">
       <div className="text-center space-y-4">
         <div className="relative flex items-center justify-center">
           <div className="absolute animate-ping rounded-full h-16 w-16 bg-blue-500 opacity-50"></div>
@@ -12,6 +12,7 @@ export default function LoadingScreen() {
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
+            <title>Loading</title>
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

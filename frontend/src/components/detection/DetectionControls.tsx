@@ -3,7 +3,7 @@
 // NOTE: components/ControlsPanel.tsx is an older, currently unused variant of
 // this panel (different button labels); it is left untouched.
 
-import { Play, Square, Camera } from "lucide-react";
+import { Camera, Play, Square } from "lucide-react";
 import type { CameraSource } from "../../utils/storage";
 
 interface DetectionControlsProps {
@@ -41,18 +41,20 @@ export default function DetectionControls({
 
         <div className="space-y-3">
           <button
+            type="button"
             onClick={onStartCamera}
             disabled={loading || isDetecting}
-            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
+            className="w-full bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
           >
             <Play className="w-5 h-5" />
             <span>{loading ? "Starting..." : "Start Camera"}</span>
           </button>
 
           <button
+            type="button"
             onClick={onStopCamera}
             disabled={loading || !isDetecting}
-            className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
+            className="w-full bg-linear-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
           >
             <Square className="w-5 h-5" />
             <span>{loading ? "Stopping..." : "Stop Camera"}</span>
@@ -66,11 +68,12 @@ export default function DetectionControls({
 
         {/* Single toggle button: Start <-> Stop */}
         <button
+          type="button"
           onClick={isRecording ? onStopRecording : onStartRecording}
           className={`w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 mb-3 ${
             isRecording
-              ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700"
-              : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+              ? "bg-linear-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700"
+              : "bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
           }`}
         >
           {isRecording ? (
@@ -87,8 +90,9 @@ export default function DetectionControls({
         </button>
 
         <button
+          type="button"
           onClick={onTakeSnapshot}
-          className="w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+          className="w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
         >
           <Camera className="w-5 h-5" />
           <span>Take Snapshot</span>

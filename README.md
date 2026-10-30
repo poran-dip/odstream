@@ -8,9 +8,9 @@ A unified control and monitoring interface for an underwater object detection dr
 
 This system provides a cross-platform GUI to interact with a remotely operated underwater drone equipped with:
 
-* **Intel RealSense camera**
-* **NVIDIA Jetson Nano** for ML inference
-* **YOLOv8** object detection model
+- **Intel RealSense camera**
+- **NVIDIA Jetson Nano** for ML inference
+- **YOLOv8** object detection model
 
 The interface supports real-time control, recording, playback, and Python-based ML workflows, accessible via a modern frontend.
 
@@ -18,13 +18,13 @@ The interface supports real-time control, recording, playback, and Python-based 
 
 ## Features
 
-* Live video feed from Jetson or webcam
-* Start/Stop recording sessions
-* Save videos as `.mp4` with timestamped filenames
-* Display and playback saved recordings
-* Trigger and display YOLO-based object detection from the frontend
-* Frontend/backend integration (Vite + Flask)
-* Supports remote backend running on a Jetson Nano via [odstream-remote](https://github.com/poran-dip/odstream-remote)
+- Live video feed from Jetson or webcam
+- Start/Stop recording sessions
+- Save videos as `.mp4` with timestamped filenames
+- Display and playback saved recordings
+- Trigger and display YOLO-based object detection from the frontend
+- Frontend/backend integration (Vite + Flask)
+- Supports remote backend running on a Jetson Nano via [odstream-remote](https://github.com/poran-dip/odstream-remote)
 
 ---
 
@@ -86,6 +86,7 @@ odstream-remote
 ├── camera               # model, realsense, recording, streaming
 └── requirements.txt     # Dependencies for remote backend
 ```
+
 ---
 
 ## Roadmap
@@ -102,39 +103,39 @@ odstream-remote
 
 ### Phase 2 – Detection Pipeline
 
-* [x] Flask API to run YOLOv8 inference
-* [x] Detection overlay on live stream
-* [x] Toggle detection from frontend
+- [x] Flask API to run YOLOv8 inference
+- [x] Detection overlay on live stream
+- [x] Toggle detection from frontend
 
 ### Phase 3 – Deployment & Polish
 
-* [x] Auto-deploy scripts for Jetson + host
-* [x] LAN streaming support (MJPEG)
-* [x] Basic mobile responsiveness
+- [x] Auto-deploy scripts for Jetson + host
+- [x] LAN streaming support (MJPEG)
+- [x] Basic mobile responsiveness
 
 ---
 
 ## Contributors
 
-* [**Poran Dip**](https://github.com/poran-dip) (primary developer)
-* [**Ruhan Roushan Islam**](https://github.com/roushan-ruhan) (multi-model integration)
-* [**Pooja Basumatary**](https://www.linkedin.com/in/pooja-basumatary-8a322a361/) (testing & presentation)
+- [**Poran Dip**](https://github.com/poran-dip) (primary developer)
+- [**Ruhan Roushan Islam**](https://github.com/roushan-ruhan) (multi-model integration)
+- [**Pooja Basumatary**](https://www.linkedin.com/in/pooja-basumatary-8a322a361/) (testing & presentation)
 
 **Mentors:**
 
-* Divya Jyoti (PhD Scholar, EEE, IIT Guwahati)
-* Parvez Aziz Boruah (PhD Scholar, CSE, IIT Guwahati)
+- Divya Jyoti (PhD Scholar, EEE, IIT Guwahati)
+- Parvez Aziz Boruah (PhD Scholar, CSE, IIT Guwahati)
 
 **Supervisor:**
-* Dr. Chayan Bhawal (Professor, EEE, IIT Guwahati)
+- Dr. Chayan Bhawal (Professor, EEE, IIT Guwahati)
 
 ---
 
 ## Notes
 
-* Minimal dependencies, modern stack
-* Recording format: `YYYYMMDD-HHMM.mp4` (e.g., `20250704-1315.mp4`)
-* Network-based live stream and object detection are now supported
+- Minimal dependencies, modern stack
+- Recording format: `YYYYMMDD-HHMM.mp4` (e.g., `20250704-1315.mp4`)
+- Network-based live stream and object detection are now supported
 
 ---
 

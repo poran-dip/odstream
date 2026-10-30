@@ -2,8 +2,8 @@
 // sources (built-in ones are read-only, custom ones can be deleted).
 
 import { Plus, Trash2 } from "lucide-react";
-import type { CameraSource } from "../../../utils/storage";
 import { DEFAULT_SOURCES } from "../../../utils/config";
+import type { CameraSource } from "../../../utils/storage";
 
 interface CameraSourcesSettingsProps {
   customSources: CameraSource[];
@@ -54,6 +54,7 @@ export default function CameraSourcesSettings({
             className={INPUT_CLASS}
           />
           <button
+            type="button"
             onClick={onAddSource}
             disabled={!newSourceName.trim() || !newSourceUrl.trim()}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
@@ -99,6 +100,7 @@ export default function CameraSourcesSettings({
                 {source.type}
               </div>
               <button
+                type="button"
                 onClick={() => onDeleteSource(source.id)}
                 className="text-red-400 hover:text-red-300 transition-colors"
               >

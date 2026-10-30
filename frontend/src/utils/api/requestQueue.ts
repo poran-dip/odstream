@@ -27,8 +27,8 @@ export class RequestQueue {
 
     this.processing = true;
     while (this.queue.length > 0) {
-      const request = this.queue.shift()!;
-      await request();
+      const request = this.queue.shift();
+      if (request) await request();
     }
     this.processing = false;
   }

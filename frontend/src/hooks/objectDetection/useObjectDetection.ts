@@ -7,21 +7,21 @@
 //   useCameraActions       - start / stop / change source / save settings
 //   useRecordingActions    - record / snapshot
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import type {
   ToastDisplayProps,
   ToastType,
 } from "../../components/ui/ToastDisplay";
 import {
-  DEFAULT_SETTINGS,
   type CameraSource,
+  DEFAULT_SETTINGS,
   type VideoSettings,
 } from "../../utils/storage";
 import type { DetectionContext } from "./types";
-import { useCustomSources } from "./useCustomSources";
-import { useInitialCameraState } from "./useInitialCameraState";
-import { useDetectionSocket } from "./useDetectionSocket";
 import { useCameraActions } from "./useCameraActions";
+import { useCustomSources } from "./useCustomSources";
+import { useDetectionSocket } from "./useDetectionSocket";
+import { useInitialCameraState } from "./useInitialCameraState";
 import { useRecordingActions } from "./useRecordingActions";
 
 export function useObjectDetection() {

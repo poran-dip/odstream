@@ -1,7 +1,7 @@
 // Camera, recording, snapshot and video-settings endpoints.
 
-import type { CameraSource, VideoSettings } from "../storage";
 import { API_BASE_URL } from "../config";
+import type { CameraSource, VideoSettings } from "../storage";
 import { RequestQueue } from "./requestQueue";
 import type { ApiResponse, StopRecordingResponse } from "./types";
 

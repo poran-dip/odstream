@@ -3,17 +3,17 @@
 // State and behaviour live in hooks/objectDetection (useObjectDetection);
 // the pieces of UI live in components/detection. This file just lays them out.
 
+import { Folder, Settings } from "lucide-react";
 import { useNavigate } from "react-router";
-import { Settings, Folder } from "lucide-react";
-import ToastDisplay from "../components/ui/ToastDisplay";
-import PageHeader from "../components/PageHeader";
-import Footer from "../components/Footer";
+import DetectionControls from "../components/detection/DetectionControls";
+import DetectionVideo from "../components/detection/DetectionVideo";
 import LoadingScreen from "../components/detection/LoadingScreen";
 import SourceDropdown from "../components/detection/SourceDropdown";
 import StopCameraDialog from "../components/detection/StopCameraDialog";
-import DetectionVideo from "../components/detection/DetectionVideo";
-import DetectionControls from "../components/detection/DetectionControls";
 import SettingsModal from "../components/detection/settings/SettingsModal";
+import Footer from "../components/Footer";
+import PageHeader from "../components/PageHeader";
+import ToastDisplay from "../components/ui/ToastDisplay";
 import { useObjectDetection } from "../hooks/objectDetection/useObjectDetection";
 
 const ICON_BUTTON_CLASS =
@@ -29,7 +29,7 @@ function ObjectDetectionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <PageHeader
@@ -48,8 +48,9 @@ function ObjectDetectionPage() {
               />
 
               {/* Settings and Folder buttons container */}
-              <div className="flex items-center space-x-3 flex-shrink-0">
+              <div className="flex items-center space-x-3 shrink-0">
                 <button
+                  type="button"
                   title="Settings"
                   onClick={() => d.setShowSettings(true)}
                   className={ICON_BUTTON_CLASS}
@@ -57,6 +58,7 @@ function ObjectDetectionPage() {
                   <Settings className="w-5 h-5 text-slate-300" />
                 </button>
                 <button
+                  type="button"
                   title="Recordings"
                   onClick={() => navigate("/recordings")}
                   className={ICON_BUTTON_CLASS}

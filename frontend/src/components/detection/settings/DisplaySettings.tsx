@@ -101,16 +101,20 @@ function SliderSetting({
 }: SliderSettingProps) {
   return (
     <div>
-      <label className="block text-sm font-medium mb-2 text-slate-300">
+      <label
+        htmlFor={label}
+        className="block text-sm font-medium mb-2 text-slate-300"
+      >
         {label}
       </label>
       <input
+        id={label}
         type="range"
         min={min}
         max={max}
         step={step}
         value={value}
-        onChange={(e) => onChange(parseInt(e.target.value))}
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
       />
       <span className="text-sm text-slate-400 mt-1 block">{display}</span>

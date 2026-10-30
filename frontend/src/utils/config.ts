@@ -1,5 +1,5 @@
-import type { CameraSource } from "./storage";
 import { API_URL } from "../../../shared/runtime-env";
+import type { CameraSource } from "./storage";
 
 export const API_BASE_URL = `http://${API_URL}:5000/api`;
 export const JETSON_API_BASE_URL = "http://jetson-nano.local:5000/api";

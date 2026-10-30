@@ -1,6 +1,6 @@
 // The backend's recordings directory: read it and change it.
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { API_BASE_URL } from "./constants";
 
 interface UseVideoDirectoryArgs {

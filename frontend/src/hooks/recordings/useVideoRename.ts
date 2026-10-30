@@ -1,6 +1,6 @@
 // Inline rename of a recording in the library list.
 
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import type { VideoFile } from "../../utils/api";
 import { API_BASE_URL } from "./constants";
 

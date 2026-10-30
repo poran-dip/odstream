@@ -1,8 +1,8 @@
 // Live video panel: MJPEG <img>, RUNNING/RECORDING badges and stats footer.
 
 import type { RefObject } from "react";
-import VideoContainer from "../VideoContainer";
 import { formatElapsedTime } from "../../utils/formatters";
+import VideoContainer from "../VideoContainer";
 
 interface DetectionVideoProps {
   isDetecting: boolean;

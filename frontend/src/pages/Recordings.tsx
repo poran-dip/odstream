@@ -3,13 +3,13 @@
 // State and behaviour live in hooks/recordings (useRecordings); the UI
 // pieces live in components/recordings. This file just lays them out.
 
-import React from "react";
-import ToastDisplay from "../components/ui/ToastDisplay";
-import PageHeader from "../components/PageHeader";
+import type React from "react";
 import Footer from "../components/Footer";
+import PageHeader from "../components/PageHeader";
 import PathDialog from "../components/recordings/PathDialog";
 import RecordingPlayer from "../components/recordings/RecordingPlayer";
 import VideoLibrary from "../components/recordings/VideoLibrary";
+import ToastDisplay from "../components/ui/ToastDisplay";
 import { useRecordings } from "../hooks/recordings/useRecordings";
 
 interface RecordingsPageProps {
@@ -20,7 +20,7 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
   const { library, rename, directory } = useRecordings();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
       <div className="max-w-7xl mx-auto p-6 h-full flex flex-col">
         <PageHeader
           title="ODReplay"

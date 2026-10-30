@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import type { ToastType } from "../../components/ui/ToastDisplay";
-import { storageUtils, type CameraSource } from "../../utils/storage";
 import { DEFAULT_SOURCES } from "../../utils/config";
+import { type CameraSource, storageUtils } from "../../utils/storage";
 
 interface UseCustomSourcesArgs {
   selectedSource: CameraSource | null;

@@ -3,12 +3,12 @@
 
 import { useEffect } from "react";
 import { detectionApi } from "../../utils/api";
-import { storageUtils } from "../../utils/storage";
-import { DEFAULT_SOURCES } from "../../utils/config";
 import {
   createTempSource,
   findMatchingSource,
 } from "../../utils/cameraSources";
+import { DEFAULT_SOURCES } from "../../utils/config";
+import { storageUtils } from "../../utils/storage";
 import type { DetectionContext } from "./types";
 
 export function useInitialCameraState(ctx: DetectionContext) {
@@ -86,5 +86,13 @@ export function useInitialCameraState(ctx: DetectionContext) {
     loadCurrentSource();
     // Run once on mount only (the setters are stable useState setters)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    setSettings,
+    setIsRecording,
+    setDetectionStartTime,
+    setSelectedSource,
+    setIsLoadingSource, // Also set initial states from the camera status
+    setIsDetecting,
+    setCustomSources,
+  ]);
 }

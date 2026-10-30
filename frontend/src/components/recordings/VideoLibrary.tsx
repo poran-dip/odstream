@@ -54,9 +54,10 @@ export default function VideoLibrary({
 
           <div className="space-y-2">
             <button
+              type="button"
               onClick={onRefresh}
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:opacity-50"
+              className="w-full bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:opacity-50"
             >
               <RefreshCw
                 className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
@@ -65,6 +66,7 @@ export default function VideoLibrary({
             </button>
 
             <button
+              type="button"
               onClick={onChangeDirectory}
               className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105"
             >

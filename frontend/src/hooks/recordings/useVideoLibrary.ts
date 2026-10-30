@@ -1,6 +1,6 @@
 // The list of recordings, the currently selected one, and load/delete.
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { VideoFile } from "../../utils/api";
 import { API_BASE_URL } from "./constants";
 
@@ -25,7 +25,7 @@ export function useVideoLibrary() {
         setRecordings(data.videos);
         // Auto-select video by ID if specified, otherwise first video
         if (data.videos.length > 0) {
-          let videoToSelect;
+          let videoToSelect: VideoFile;
           if (selectVideoId) {
             videoToSelect =
               data.videos.find((v: VideoFile) => v.id === selectVideoId) ||

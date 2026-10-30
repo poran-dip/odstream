@@ -5,6 +5,6 @@
 //   detectionApi.ts  - camera, recording, snapshot, video settings
 //   videosApi.ts     - recorded videos + config (videosApi, configApi)
 
-export type { VideoFile, ApiResponse, StopRecordingResponse } from "./types";
 export { detectionApi } from "./detectionApi";
-export { videosApi, configApi } from "./videosApi";
+export type { ApiResponse, StopRecordingResponse, VideoFile } from "./types";
+export { configApi, videosApi } from "./videosApi";

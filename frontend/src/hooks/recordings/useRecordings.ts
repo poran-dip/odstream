@@ -4,9 +4,9 @@
 //   useVideoDirectory - recordings directory (read / change)
 
 import { useEffect } from "react";
+import { useVideoDirectory } from "./useVideoDirectory";
 import { useVideoLibrary } from "./useVideoLibrary";
 import { useVideoRename } from "./useVideoRename";
-import { useVideoDirectory } from "./useVideoDirectory";
 
 export function useRecordings() {
   const library = useVideoLibrary();

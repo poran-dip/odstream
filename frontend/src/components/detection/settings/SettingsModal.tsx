@@ -2,8 +2,8 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import type { CameraSource, VideoSettings } from "../../../utils/storage";
-import DisplaySettings from "./DisplaySettings";
 import CameraSourcesSettings from "./CameraSourcesSettings";
+import DisplaySettings from "./DisplaySettings";
 
 interface SettingsModalProps {
   settings: VideoSettings;
@@ -33,7 +33,7 @@ export default function SettingsModal({
 }: SettingsModalProps) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-2xl p-6 w-[800px] max-w-[90vw] max-h-[80vh] overflow-y-auto">
+      <div className="bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-2xl p-6 w-200 max-w-[90vw] max-h-[80vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-6 text-slate-100">Settings</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -46,6 +46,7 @@ export default function SettingsModal({
 
         <div className="flex justify-between mt-8">
           <button
+            type="button"
             onClick={() => {
               onSave({
                 brightness: settings.brightness,
@@ -59,6 +60,7 @@ export default function SettingsModal({
             {saving ? "Saving..." : "Save Settings"}
           </button>
           <button
+            type="button"
             onClick={onClose}
             className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
           >

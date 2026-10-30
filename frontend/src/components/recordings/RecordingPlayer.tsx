@@ -1,9 +1,9 @@
 // Video player area with the selected recording's details underneath.
 
-import VideoContainer from "../VideoContainer";
+import { getVideoUrl } from "../../hooks/recordings/constants";
 import type { VideoFile } from "../../utils/api";
 import { formatDate, formatFileSize } from "../../utils/formatters";
-import { getVideoUrl } from "../../hooks/recordings/constants";
+import VideoContainer from "../VideoContainer";
 
 interface RecordingPlayerProps {
   currentVideo: VideoFile | null;
@@ -45,6 +45,7 @@ export default function RecordingPlayer({
     >
       {/* key forces a fresh <video> element when the selection changes */}
       {currentVideo && (
+        // biome-ignore lint/a11y/useMediaCaption: no caption tracks
         <video
           key={currentVideo.id}
           controls
