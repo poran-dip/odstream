@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router";
 import ObjectDetectionPage from "./pages/ObjectDetection";
 import RecordingsPage from "./pages/Recordings";
 

@@ -3,7 +3,7 @@
 // State and behaviour live in hooks/objectDetection (useObjectDetection);
 // the pieces of UI live in components/detection. This file just lays them out.
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Settings, Folder } from "lucide-react";
 import ToastDisplay from "../components/ui/ToastDisplay";
 import PageHeader from "../components/PageHeader";
