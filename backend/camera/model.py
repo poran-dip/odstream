@@ -1,14 +1,13 @@
 """YOLO model handling: loading, running inference and formatting results."""
 
+import platform
 import sys
 import warnings
-import platform
 from pathlib import Path
 
 import torch
-from ultralytics import YOLO
-
 from config import Config
+from ultralytics import YOLO
 
 # The local YOLOv5 repo lives at backend/yolov5. This file is in backend/camera,
 # so go up one extra level to reach the backend directory.

@@ -34,7 +34,7 @@ class DetectionLogMixin:
             log_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Write a small header describing the log format
-            self.log_file = open(log_path, "w", encoding="utf-8")
+            self.log_file = open(log_path, "w", encoding="utf-8")  # noqa: SIM115
             self.log_file.write(
                 f"Detection Log Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
             )
@@ -67,13 +67,13 @@ class DetectionLogMixin:
             self.detection_buffer.pop(0)
 
         # Window is full and every entry matches -> detection is stable
-        if len(self.detection_buffer) == self.stable_frames_required:
-            if all(det == self.detection_buffer[0] for det in self.detection_buffer):
-                # Only write when the stable detection actually changed
-                if detection_signature != self.last_logged_detection:
-                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    self.log_file.write(
-                        f"[{timestamp}] Objects: {detection_signature}\n"
-                    )
-                    self.log_file.flush()
-                    self.last_logged_detection = detection_signature
+        if (
+            len(self.detection_buffer) == self.stable_frames_required
+            and all(det == self.detection_buffer[0] for det in self.detection_buffer)
+            # Only write when the stable detection actually changed
+            and detection_signature != self.last_logged_detection
+        ):
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.log_file.write(f"[{timestamp}] Objects: {detection_signature}\n")
+            self.log_file.flush()
+            self.last_logged_detection = detection_signature

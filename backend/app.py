@@ -1,13 +1,14 @@
 import socket
 from pathlib import Path
-from flask import Flask
-from flask_socketio import SocketIO
-from flask_cors import CORS
+
 from config import Config
-from routes.video_routes import video_bp, get_video_manager
-from routes.camera_routes import camera_bp, init_socketio, get_camera_manager
+from flask import Flask
+from flask_cors import CORS
+from flask_socketio import SocketIO
+from routes.camera_routes import camera_bp, get_camera_manager, init_socketio
 from routes.config_routes import config_bp
 from routes.socket_events import register_socket_events
+from routes.video_routes import get_video_manager, video_bp
 
 
 def get_local_ip():

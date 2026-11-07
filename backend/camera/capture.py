@@ -1,11 +1,10 @@
 """Snapshots and video recording."""
 
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import cv2
 import requests
-
 from config import Config
 
 

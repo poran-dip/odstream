@@ -2,7 +2,7 @@
 
 from flask import jsonify, request
 
-from routes.camera.state import camera_bp, camera_manager, broadcast
+from routes.camera.state import broadcast, camera_bp, camera_manager
 
 
 def _current_video_settings():
@@ -43,7 +43,7 @@ def get_video_settings():
         )
 
     except Exception as e:
-        error_message = f"Failed to get video settings: {str(e)}"
+        error_message = f"Failed to get video settings: {e!s}"
         return jsonify({"success": False, "error": error_message}), 400
 
 
@@ -83,7 +83,7 @@ def update_video_settings():
         )
 
     except Exception as e:
-        error_message = f"Failed to update video settings: {str(e)}"
+        error_message = f"Failed to update video settings: {e!s}"
         return jsonify({"success": False, "error": error_message}), 400
 
 

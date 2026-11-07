@@ -9,9 +9,9 @@ Pieces of the desktop launcher (``run_app.py``).
     processes.py - starting / stopping the backend & frontend dev servers
 """
 
-from launcher.theme import COLORS
-from launcher.ui import UIMixin
 from launcher.output import OutputMixin
 from launcher.processes import ProcessMixin
+from launcher.theme import COLORS
+from launcher.ui import UIMixin
 
-__all__ = ["COLORS", "UIMixin", "OutputMixin", "ProcessMixin"]
+__all__ = ["COLORS", "OutputMixin", "ProcessMixin", "UIMixin"]

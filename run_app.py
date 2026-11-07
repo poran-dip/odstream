@@ -10,11 +10,11 @@ package; this file just stitches them together.
 """
 
 import platform
+import re
 import tkinter as tk
 from pathlib import Path
-import re
 
-from launcher import COLORS, UIMixin, OutputMixin, ProcessMixin
+from launcher import COLORS, OutputMixin, ProcessMixin, UIMixin
 
 
 class AppLauncher(UIMixin, OutputMixin, ProcessMixin):
@@ -22,9 +22,9 @@ class AppLauncher(UIMixin, OutputMixin, ProcessMixin):
         self.root = tk.Tk()
         self.root.title("Full Stack App Launcher")
         self.root.geometry("600x700")
-        self.root.configure(bg='#1a1a1a')
+        self.root.configure(bg="#1a1a1a")
         # Strips ANSI colour codes from child process output
-        self.ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
+        self.ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
         self.colors = dict(COLORS)
 
@@ -48,6 +48,7 @@ class AppLauncher(UIMixin, OutputMixin, ProcessMixin):
     def run(self):
         self.log_message("App Launcher ready!")
         self.root.mainloop()
+
 
 if __name__ == "__main__":
     app = AppLauncher()

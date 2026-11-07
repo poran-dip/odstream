@@ -2,7 +2,7 @@
 
 from flask import jsonify, request
 
-from routes.camera.state import camera_bp, camera_manager, broadcast
+from routes.camera.state import broadcast, camera_bp, camera_manager
 
 
 @camera_bp.route("/api/snapshot", methods=["POST"])

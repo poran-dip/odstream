@@ -36,26 +36,34 @@ class OutputMixin:
         try:
             while process.poll() is None:
                 if process.stdout:
-                    for line in iter(process.stdout.readline, ''):
+                    for line in iter(process.stdout.readline, ""):
                         if line:
-                            clean_line = self.ansi_escape.sub('', line)
-                            self.root.after(0, self.append_to_terminal, terminal_widget, clean_line)
+                            clean_line = self.ansi_escape.sub("", line)
+                            self.root.after(
+                                0, self.append_to_terminal, terminal_widget, clean_line
+                            )
                             if process_name == "Frontend":
                                 self.extract_url_from_output(line, process_name)
                 if process.stderr:
                     line = process.stderr.readline()
                     if line:
-                        self.root.after(0, self.append_to_terminal, terminal_widget, f"{line}")
+                        self.root.after(
+                            0, self.append_to_terminal, terminal_widget, f"{line}"
+                        )
                         if process_name == "Frontend":
                             self.extract_url_from_output(line, process_name)
                 time.sleep(0.1)
         except Exception as e:
-            self.root.after(0, self.append_to_terminal, terminal_widget,
-                             f"[{process_name}] Error: {str(e)}\n")
+            self.root.after(
+                0,
+                self.append_to_terminal,
+                terminal_widget,
+                f"[{process_name}] Error: {e!s}\n",
+            )
 
     def log_message(self, message):
         """Append a timestamped line to the Logs tab."""
-        timestamp = time.strftime('%H:%M:%S')
+        timestamp = time.strftime("%H:%M:%S")
         log_text = f"{timestamp} - {message}\n"
         self.logs_terminal.insert(tk.END, log_text)
         self.logs_terminal.see(tk.END)
@@ -87,17 +95,17 @@ class OutputMixin:
             webbrowser.open(self.app_url)
             self.log_message(f"🌐 Opened {self.app_url} in browser")
         except Exception as e:
-            self.log_message(f"❌ Failed to open URL: {str(e)}")
+            self.log_message(f"❌ Failed to open URL: {e!s}")
 
     def extract_url_from_output(self, text, process_name):
         """Look for a dev-server URL in a line of output (e.g. Vite's
         "Local: http://localhost:5173/") and remember it as ``self.app_url``."""
         url_patterns = [
-            r'http://localhost:\d+/?',
-            r'http://127\.0\.0\.1:\d+/?',
-            r'Local:\s+(http://[^\s]+)',
-            r'running at (http://[^\s]+)',
-            r'Available on:\s+(http://[^\s]+)'
+            r"http://localhost:\d+/?",
+            r"http://127\.0\.0\.1:\d+/?",
+            r"Local:\s+(http://[^\s]+)",
+            r"running at (http://[^\s]+)",
+            r"Available on:\s+(http://[^\s]+)",
         ]
 
         for pattern in url_patterns:

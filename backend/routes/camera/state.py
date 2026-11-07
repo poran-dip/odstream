@@ -1,7 +1,7 @@
 """Shared state for the camera routes: blueprint, manager and Socket.IO."""
 
-from flask import Blueprint
 from camera_manager import CameraManager
+from flask import Blueprint
 
 # Create blueprint (every camera route module registers onto this one)
 camera_bp = Blueprint("camera", __name__)

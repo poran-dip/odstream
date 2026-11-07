@@ -1,5 +1,6 @@
 from pathlib import Path
-from config import VIDEO_EXTENSIONS, DEFAULT_VIDEO_PATH
+
+from config import DEFAULT_VIDEO_PATH, VIDEO_EXTENSIONS
 
 
 class VideoManager:
@@ -48,7 +49,7 @@ class VideoManager:
             old_path.rename(new_path)
             return True, "File renamed successfully"
         except Exception as e:
-            return False, f"Error renaming file: {str(e)}"
+            return False, f"Error renaming file: {e!s}"
 
     def delete_video(self, filename):
         """Delete a video file"""
@@ -61,7 +62,7 @@ class VideoManager:
             file_path.unlink()
             return True, "File deleted successfully"
         except Exception as e:
-            return False, f"Error deleting file: {str(e)}"
+            return False, f"Error deleting file: {e!s}"
 
     def get_video_path(self, filename):
         """Get the full path of a video file"""

@@ -5,8 +5,8 @@ in ``self.remote_frame_buffer`` (guarded by ``self.remote_frame_lock``). The
 frame pipeline then reads from that buffer instead of a local ``VideoCapture``.
 """
 
-import time
 import threading
+import time
 
 import cv2
 import numpy as np
@@ -127,9 +127,7 @@ class RemoteStreamMixin:
     def _start_remote_stream_thread(self):
         """Mark the remote stream active and spawn the daemon worker thread."""
         self.remote_stream_active = True
-        self.remote_stream_thread = threading.Thread(
-            target=self._remote_stream_worker
-        )
+        self.remote_stream_thread = threading.Thread(target=self._remote_stream_worker)
         self.remote_stream_thread.daemon = True
         self.remote_stream_thread.start()
 

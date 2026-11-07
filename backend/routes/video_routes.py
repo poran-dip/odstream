@@ -1,6 +1,7 @@
-from pathlib import Path
 import mimetypes
-from flask import Blueprint, jsonify, request, send_file, abort
+from pathlib import Path
+
+from flask import Blueprint, abort, jsonify, request, send_file
 from video_manager import VideoManager
 
 # Create blueprint

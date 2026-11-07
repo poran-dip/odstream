@@ -1,8 +1,10 @@
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+from config import VIDEO_EXTENSIONS
 from flask import Blueprint, jsonify, request
 from video_manager import VideoManager
-from config import VIDEO_EXTENSIONS
+
 from routes.video_routes import get_video_manager, set_video_manager
 
 # Create blueprint

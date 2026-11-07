@@ -1,6 +1,7 @@
 import os
-from pathlib import Path
 import re
+from pathlib import Path
+from typing import ClassVar
 
 # File System Configuration
 VIDEO_EXTENSIONS = {
@@ -44,7 +45,7 @@ def read_api_url_from_runtime_env():
             f"Runtime environment file not found at {runtime_env_path}"
         )
     except Exception as e:
-        raise Exception(f"Error reading API_URL from runtime-env.ts: {str(e)}")
+        raise RuntimeError(f"Error reading API_URL from runtime-env.ts: {e!s}")
 
 
 # Read API_URL from the TypeScript file
@@ -84,7 +85,7 @@ class Config:
     CAMERA_FPS = 60
 
     # Video settings configuration
-    DEFAULT_VIDEO_SETTINGS = {
+    DEFAULT_VIDEO_SETTINGS: ClassVar[dict] = {
         "brightness": 0,  # -100 to 100 (0 = no change)
         "contrast": 1.0,  # 0.0 to 3.0 (1.0 = no change)
         "saturation": 1.0,  # 0.0 to 2.0 (1.0 = no change)

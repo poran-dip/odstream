@@ -8,15 +8,15 @@ and defines the shared state they all operate on.
 
 import threading
 
-from config import Config
 from camera import (
-    ModelMixin,
-    DetectionLogMixin,
-    RemoteStreamMixin,
     CameraLifecycleMixin,
-    FrameMixin,
     CaptureMixin,
+    DetectionLogMixin,
+    FrameMixin,
+    ModelMixin,
+    RemoteStreamMixin,
 )
+from config import Config
 
 
 class CameraManager(

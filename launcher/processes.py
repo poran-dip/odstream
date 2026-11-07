@@ -1,8 +1,8 @@
 """Starting and stopping the backend / frontend dev servers."""
 
-import time
-import threading
 import subprocess
+import threading
+import time
 import tkinter as tk
 import webbrowser
 
@@ -17,54 +17,58 @@ class ProcessMixin:
     def start_application(self):
         self.start_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
-        self.progress['value'] = 0
+        self.progress["value"] = 0
         # Run the (slow, sleeping) launch sequence off the Tk thread
         threading.Thread(target=self.launch_sequence, daemon=True).start()
 
     def launch_sequence(self):
         try:
             self.log_message("Starting backend server...")
-            self.update_status("backend", "Starting...", self.colors['warning'])
-            self.progress['value'] = 10
+            self.update_status("backend", "Starting...", self.colors["warning"])
+            self.progress["value"] = 10
 
             if self.start_backend():
-                self.update_status("backend", "Running ✓", self.colors['success'])
+                self.update_status("backend", "Running ✓", self.colors["success"])
                 self.log_message("Backend server started successfully")
-                self.progress['value'] = 40
+                self.progress["value"] = 40
 
                 time.sleep(3)
 
                 self.log_message("Starting frontend server...")
-                self.update_status("frontend", "Starting...", self.colors['warning'])
-                self.progress['value'] = 50
+                self.update_status("frontend", "Starting...", self.colors["warning"])
+                self.progress["value"] = 50
 
                 if self.start_frontend():
-                    self.update_status("frontend", "Running ✓", self.colors['success'])
+                    self.update_status("frontend", "Running ✓", self.colors["success"])
                     self.log_message("Frontend server started successfully")
-                    self.progress['value'] = 80
+                    self.progress["value"] = 80
 
                     time.sleep(3)
 
                     self.log_message("Opening browser...")
-                    self.update_status("browser", "Launching...", self.colors['warning'])
-                    self.progress['value'] = 90
+                    self.update_status(
+                        "browser", "Launching...", self.colors["warning"]
+                    )
+                    self.progress["value"] = 90
 
                     if self.open_browser():
-                        self.update_status("browser", "Opened ✓", self.colors['success'])
+                        self.update_status(
+                            "browser", "Opened ✓", self.colors["success"]
+                        )
                         self.log_message("Browser opened successfully")
-                        self.progress['value'] = 100
+                        self.progress["value"] = 100
                         self.log_message("🎉 Application launched successfully!")
                     else:
                         self.log_message("❌ Failed to open browser")
                 else:
                     self.log_message("❌ Failed to start frontend")
-                    self.update_status("frontend", "Failed ❌", self.colors['error'])
+                    self.update_status("frontend", "Failed ❌", self.colors["error"])
             else:
                 self.log_message("❌ Failed to start backend")
-                self.update_status("backend", "Failed ❌", self.colors['error'])
+                self.update_status("backend", "Failed ❌", self.colors["error"])
 
         except Exception as e:
-            self.log_message(f"❌ Error: {str(e)}")
+            self.log_message(f"❌ Error: {e!s}")
 
     # ------------------------------------------------------------------
     # Individual services
@@ -79,7 +83,7 @@ class ProcessMixin:
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
         )
 
     def start_backend(self):
@@ -98,20 +102,24 @@ class ProcessMixin:
                 if not venv_activate.exists():
                     self.log_message("Virtual environment not found.")
                     return False
-                cmd = f'cd "{backend_path}" && source venv/bin/activate && python app.py'
+                cmd = (
+                    f'cd "{backend_path}" && source venv/bin/activate && python app.py'
+                )
 
             self.backend_process = self._spawn(cmd)
 
             self.processes.append(self.backend_process)
 
-            threading.Thread(target=self.read_process_output,
-                            args=(self.backend_process, self.backend_terminal, "Backend"),
-                            daemon=True).start()
+            threading.Thread(
+                target=self.read_process_output,
+                args=(self.backend_process, self.backend_terminal, "Backend"),
+                daemon=True,
+            ).start()
 
             return True
 
         except Exception as e:
-            self.log_message(f"Backend error: {str(e)}")
+            self.log_message(f"Backend error: {e!s}")
             return False
 
     def start_frontend(self):
@@ -128,14 +136,16 @@ class ProcessMixin:
 
             self.processes.append(self.frontend_process)
 
-            threading.Thread(target=self.read_process_output,
-                            args=(self.frontend_process, self.frontend_terminal, "Frontend"),
-                            daemon=True).start()
+            threading.Thread(
+                target=self.read_process_output,
+                args=(self.frontend_process, self.frontend_terminal, "Frontend"),
+                daemon=True,
+            ).start()
 
             return True
 
         except Exception as e:
-            self.log_message(f"Frontend error: {str(e)}")
+            self.log_message(f"Frontend error: {e!s}")
             return False
 
     def open_browser(self):
@@ -143,7 +153,7 @@ class ProcessMixin:
             webbrowser.open("http://localhost:5173/")
             return True
         except Exception as e:
-            self.log_message(f"Browser error: {str(e)}")
+            self.log_message(f"Browser error: {e!s}")
             return False
 
     # ------------------------------------------------------------------
@@ -161,17 +171,17 @@ class ProcessMixin:
                     if self.os_type != "windows":
                         process.wait(timeout=5)
             except Exception as e:
-                self.log_message(f"Error stopping process: {str(e)}")
+                self.log_message(f"Error stopping process: {e!s}")
 
         self.processes.clear()
 
-        self.update_status("backend", "Stopped", self.colors['text_secondary'])
-        self.update_status("frontend", "Stopped", self.colors['text_secondary'])
-        self.update_status("browser", "Closed", self.colors['text_secondary'])
+        self.update_status("backend", "Stopped", self.colors["text_secondary"])
+        self.update_status("frontend", "Stopped", self.colors["text_secondary"])
+        self.update_status("browser", "Closed", self.colors["text_secondary"])
 
         self.start_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
         self.launch_url_button.config(state=tk.DISABLED)
-        self.progress['value'] = 0
+        self.progress["value"] = 0
 
         self.log_message("All servers stopped")

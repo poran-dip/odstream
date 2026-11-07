@@ -3,7 +3,6 @@
 import time
 
 import cv2
-
 from config import Config
 
 
@@ -38,11 +37,10 @@ class CameraLifecycleMixin:
 
             # Handle local camera - only if NOT remote
             # Load model for local cameras (needed for detection mode)
-            if self.model is None:
-                if not self.load_model():
-                    print(
-                        "Warning: Model failed to load - detection features will be disabled"
-                    )
+            if self.model is None and not self.load_model():
+                print(
+                    "Warning: Model failed to load - detection features will be disabled"
+                )
 
             # Use index from source for local camera
             camera_index = self.camera_source.get("index", 0)

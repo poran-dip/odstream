@@ -1,8 +1,8 @@
 """Camera control routes: start, change source, stop, status check, feed."""
 
-from flask import jsonify, Response, request
+from flask import Response, jsonify, request
 
-from routes.camera.state import camera_bp, camera_manager, broadcast
+from routes.camera.state import broadcast, camera_bp, camera_manager
 from routes.camera.validation import validate_source
 
 

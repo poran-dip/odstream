@@ -16,18 +16,18 @@ All mixins share state through ``self``; every attribute they rely on is
 initialised in ``CameraManager.__init__``.
 """
 
-from camera.model import ModelMixin
-from camera.detection_log import DetectionLogMixin
-from camera.remote import RemoteStreamMixin
-from camera.lifecycle import CameraLifecycleMixin
-from camera.frames import FrameMixin
 from camera.capture import CaptureMixin
+from camera.detection_log import DetectionLogMixin
+from camera.frames import FrameMixin
+from camera.lifecycle import CameraLifecycleMixin
+from camera.model import ModelMixin
+from camera.remote import RemoteStreamMixin
 
 __all__ = [
-    "ModelMixin",
-    "DetectionLogMixin",
-    "RemoteStreamMixin",
     "CameraLifecycleMixin",
-    "FrameMixin",
     "CaptureMixin",
+    "DetectionLogMixin",
+    "FrameMixin",
+    "ModelMixin",
+    "RemoteStreamMixin",
 ]
