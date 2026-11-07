@@ -75,7 +75,10 @@ class FrameMixin:
             else:
                 # Local camera - add safety check
                 if self.camera is not None and self.camera.isOpened():
+                    # Start of the capture -> encode latency measurement
+                    t0 = time.time()
                     success, frame = self.camera.read()
+                    self._last_capture_time = t0
                     if success and frame is not None:
                         frame = self._apply_settings(frame)
                     return success, frame
@@ -96,7 +99,7 @@ class FrameMixin:
 
         fps_counter = 0
         fps_timer = time.time()
-        fps_interval = 1.0  # print FPS every 1 second
+        fps_interval = 1.0  # publish FPS every 1 second
 
         while True:
             if not self.is_camera_active():
@@ -129,10 +132,11 @@ class FrameMixin:
             current_time = time.time()
             elapsed = current_time - fps_timer
             if elapsed >= fps_interval:
-                fps = fps_counter / elapsed
-                print(f"[FPS] {fps:.2f}")
+                fps = round(fps_counter / elapsed, 2)
                 fps_counter = 0
                 fps_timer = current_time
+                # Store + emit "perf_update" to clients (see PerfMixin)
+                self._publish_fps(fps)
             # ---------------------------
 
             try:
@@ -145,6 +149,7 @@ class FrameMixin:
                     annotated_frame, results = self._annotate_frame(frame)
                     if results:
                         self._log_detection(results)
+                        self._last_detection_count = self._count_detections(results)
                 else:
                     annotated_frame = frame
 
@@ -158,6 +163,10 @@ class FrameMixin:
                     annotated_frame,
                     [cv2.IMWRITE_JPEG_QUALITY, Config.JPEG_QUALITY],
                 )
+
+                # Performance metrics (see PerfMixin)
+                self._record_pipeline_latency()
+                self._write_benchmark_sample()
 
                 if ret:
                     # Emit one part of the multipart/x-mixed-replace response

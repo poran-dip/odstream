@@ -182,6 +182,9 @@ class CaptureMixin:
                 self.detection_buffer = []
                 self.last_logged_detection = None
 
+            # Close the FPS/latency benchmark log, if one was started
+            self._close_benchmark_log()
+
             filename = (
                 Path(self.recording_filename).name
                 if self.recording_filename

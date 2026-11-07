@@ -171,3 +171,27 @@ class ModelMixin:
         except Exception as e:
             print(f"Error formatting detections: {e}")
             return "Detection formatting error"
+
+    def _count_detections(self, results):
+        """Count number of detected objects above confidence threshold
+
+        Uses the same 0.3 threshold as ``_format_detection_string``. Returns 0
+        if the results can't be read.
+        """
+        count = 0
+        conf_threshold = 0.3
+        try:
+            if _uses_v8_api():
+                res_list = results if isinstance(results, list) else [results]
+                for res in res_list:
+                    if hasattr(res, "boxes"):
+                        count += sum(
+                            1 for box in res.boxes if float(box.conf) >= conf_threshold
+                        )
+            elif Config.YOLO_MODEL_VERSION == "v5":
+                count = sum(
+                    1 for *_, conf, _ in results.xyxy[0] if conf >= conf_threshold
+                )
+        except Exception:
+            pass
+        return count

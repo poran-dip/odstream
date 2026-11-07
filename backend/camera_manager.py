@@ -14,6 +14,7 @@ from camera import (
     DetectionLogMixin,
     FrameMixin,
     ModelMixin,
+    PerfMixin,
     RemoteStreamMixin,
 )
 from config import Config
@@ -25,6 +26,7 @@ class CameraManager(
     FrameMixin,
     RemoteStreamMixin,
     DetectionLogMixin,
+    PerfMixin,
     ModelMixin,
 ):
     """Manages the active camera (local or remote), streaming, YOLO detection,
@@ -61,3 +63,19 @@ class CameraManager(
         self.remote_frame_lock = threading.Lock()
         self.remote_stream_thread = None
         self.remote_stream_active = False
+
+        # --- Performance metrics (see PerfMixin) ---
+        self._last_detection_count = 0
+        self._socketio = None  # set via set_socketio() from the routes
+        self._current_fps = None
+        self._last_capture_time = None
+        self._last_encode_time = None
+        self._pipeline_latency_ms = None
+        self._latency_history = []
+        self._max_latency_samples = 30
+
+        # Benchmarking: logs FPS/latency samples while recording
+        self.benchmarking = True
+        self._benchmark_log_file = None
+        self._benchmark_last_write = 0.0
+        self._benchmark_interval = 0.5  # seconds between samples
