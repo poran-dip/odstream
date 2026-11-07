@@ -28,11 +28,33 @@ class ModelMixin:
     Expects ``self.model`` to be initialised (to ``None``) by the owner class.
     """
 
+    def _resolve_device(self):
+        """Resolve YOLO_DEVICE config into an actual torch device string.
+
+        ``"cuda"`` fails loudly if CUDA isn't available (so benchmarks never
+        silently fall back to CPU); ``"auto"`` picks CUDA when it's there.
+        """
+        if Config.YOLO_DEVICE == "cuda":
+            if not torch.cuda.is_available():
+                raise RuntimeError(
+                    "YOLO_DEVICE='cuda' but torch.cuda.is_available() is False"
+                )
+            return "cuda:0"
+        if Config.YOLO_DEVICE == "cpu":
+            return "cpu"
+        # "auto"
+        return "cuda:0" if torch.cuda.is_available() else "cpu"
+
     def load_model(self):
         """Load YOLO model based on config version (v5 or v8)"""
         try:
             print(
                 f"Loading YOLO model ({Config.YOLO_MODEL_VERSION}) from {Config.YOLO_MODEL_PATH}"
+            )
+
+            device = self._resolve_device()
+            print(
+                f"Resolved device: {device} (cuda available: {torch.cuda.is_available()})"
             )
 
             # Handle PosixPath on Windows (models pickled on Linux/macOS)
@@ -44,6 +66,7 @@ class ModelMixin:
             if _uses_v8_api():
                 # YOLOv8 (Ultralytics official)
                 self.model = YOLO(Config.YOLO_MODEL_PATH)
+                self.model.to(device)
 
             elif Config.YOLO_MODEL_VERSION == "v5":
                 # YOLOv5 custom repo
@@ -60,6 +83,7 @@ class ModelMixin:
                     path=str(Path(Config.YOLO_MODEL_PATH)),
                     source="local",
                     force_reload=True,
+                    device=device,
                 )
                 self.model.eval()
 
