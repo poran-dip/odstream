@@ -67,7 +67,7 @@ class Config:
     SECRET_KEY = "YOLOTUBE_69"
 
     """Application configuration"""
-    DEBUG = True
+    DEBUG = False
     PORT = 5000
     THREADED = True
 
