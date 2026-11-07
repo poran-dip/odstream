@@ -4,22 +4,24 @@
 
 /*
  * ROV console theme.
- * Deep-water blues for surfaces; buoy orange is reserved for the primary
- * action (Record), keyboard focus and slider thumbs. Signal red means
- * recording / stop, kelp green means live.
+ * Saturated sea-green surfaces in clearly separated steps (well < page <
+ * panel < raised), with borders >= 3:1 against both page and panels.
+ * Buoy orange is reserved for the primary action (Record), keyboard focus
+ * and slider thumbs. Signal red means recording / stop, kelp green live.
  */
 @theme {
   --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --color-deep: #0b2230; /* page background, video well */
-  --color-hull: #10303f; /* panels */
-  --color-raised: #16394a; /* hover / selected rows */
-  --color-line: #24505f; /* borders and dividers */
-  --color-foam: #e4eef1; /* primary text */
-  --color-silt: #8daab4; /* secondary text */
+  --color-well: #020d0c; /* behind video, darkest */
+  --color-deep: #051d19; /* page background */
+  --color-hull: #0d423b; /* panels (1.55:1 vs page) */
+  --color-raised: #145249; /* hover / selected rows */
+  --color-line: #40968b; /* borders: 4.98:1 vs page, 3.2:1 vs panels */
+  --color-foam: #ebf9f5; /* primary text */
+  --color-silt: #a1cec8; /* secondary text (>= 5.2:1 on every surface) */
   --color-buoy: #ff7a1a; /* primary action, focus */
-  --color-signal: #f0545a; /* recording, destructive */
-  --color-kelp: #45c48f; /* live */
+  --color-signal: #ff6166; /* recording, destructive */
+  --color-kelp: #3fe29a; /* live */
 }
 
 @layer base {

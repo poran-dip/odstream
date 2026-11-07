@@ -9,7 +9,11 @@ const Footer = () => {
         <span className="text-foam">TIH IIT Guwahati</span>.
       </p>
       <p className="mt-1">
-        Developed by Poran Dip Boruah, Md Ruhan Roushan Islam and Pooja
+        Designed and developed by{" "}
+        <span className="text-foam">Poran Dip Boruah</span>.
+      </p>
+      <p className="mt-1">
+        Original internship team members: Md Ruhan Roushan Islam and Pooja
         Basumatary.
       </p>
     </footer>

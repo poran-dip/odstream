@@ -26,7 +26,7 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
 }) => {
   return (
     <section className={`panel min-w-0 overflow-hidden ${className}`}>
-      <div className="relative aspect-video bg-deep">
+      <div className="relative aspect-video bg-well">
         {showPlaceholder ? (
           <div className="absolute inset-0 grid place-items-center p-6 text-center">
             <div>
