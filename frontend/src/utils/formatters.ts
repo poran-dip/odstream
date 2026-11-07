@@ -1,3 +1,11 @@
+/**
+ * Local start time for a camera that has been running for `uptimeSeconds`
+ * (as reported by the backend). Falls back to "now" if the backend didn't
+ * send it.
+ */
+export const startTimeFromUptime = (uptimeSeconds?: number | null) =>
+  Date.now() - (uptimeSeconds ?? 0) * 1000;
+
 export const formatElapsedTime = (startTime: number) => {
   if (!startTime) return "00:00";
   const elapsed = Math.floor((Date.now() - startTime) / 1000);

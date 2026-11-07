@@ -9,6 +9,7 @@ import {
   findMatchingSource,
 } from "../../utils/cameraSources";
 import { API_BASE_URL, DEFAULT_SOURCES } from "../../utils/config";
+import { startTimeFromUptime } from "../../utils/formatters";
 import type { DetectionContext } from "./types";
 
 const VIDEO_FEED_URL = `${API_BASE_URL}/video_feed`;
@@ -105,7 +106,9 @@ export function useDetectionSocket(ctx: DetectionContext) {
 
       if (data.active) {
         setIsDetecting(true);
-        setDetectionStartTime(Date.now());
+        // Real camera uptime from the backend, so reconnects and new tabs
+        // don't restart the elapsed timer
+        setDetectionStartTime(startTimeFromUptime(data.uptime_seconds));
 
         console.log("Camera active logged");
 

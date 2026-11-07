@@ -2,7 +2,7 @@
 // and the readout strip (FPS, latency, objects, elapsed) on its bottom edge.
 
 import { Maximize2, Minimize2 } from "lucide-react";
-import { type RefObject, useRef } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { useFullscreen } from "../../hooks/useFullscreen";
 import { formatElapsedTime } from "../../utils/formatters";
 import VideoContainer from "../VideoContainer";
@@ -39,6 +39,15 @@ export default function DetectionVideo({
       img && img.naturalHeight > img.naturalWidth ? "portrait" : "landscape";
     toggle(fit);
   };
+
+  // Re-render once a second while the camera is on so the elapsed readout
+  // ticks on its own (perf_update only re-renders when a value changes)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!isDetecting) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [isDetecting]);
 
   // "—" until the camera is on and the first perf_update has arrived
   const readouts = [

@@ -42,6 +42,8 @@ export const detectionApi = {
     detection_enabled?: boolean;
     recording?: boolean;
     model_loaded?: boolean;
+    /** Seconds the camera has been running (null when off) */
+    uptime_seconds?: number | null;
     error?: string;
   }> => {
     try {
