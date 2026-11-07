@@ -1,1 +1,76 @@
 @import "tailwindcss";
+/* Archivo variable, bundled (works offline): weight 100-900, width 62-125% */
+@import "@fontsource-variable/archivo/wdth.css";
+
+/*
+ * ROV console theme.
+ * Deep-water blues for surfaces; buoy orange is reserved for the primary
+ * action (Record), keyboard focus and slider thumbs. Signal red means
+ * recording / stop, kelp green means live.
+ */
+@theme {
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-deep: #0b2230; /* page background, video well */
+  --color-hull: #10303f; /* panels */
+  --color-raised: #16394a; /* hover / selected rows */
+  --color-line: #24505f; /* borders and dividers */
+  --color-foam: #e4eef1; /* primary text */
+  --color-silt: #8daab4; /* secondary text */
+  --color-buoy: #ff7a1a; /* primary action, focus */
+  --color-signal: #f0545a; /* recording, destructive */
+  --color-kelp: #45c48f; /* live */
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-deep font-sans text-foam antialiased;
+  }
+
+  /* One focus style everywhere, visible on every surface */
+  :focus-visible {
+    outline: 2px solid var(--color-buoy);
+    outline-offset: 2px;
+  }
+
+  input[type="range"] {
+    accent-color: var(--color-buoy);
+  }
+}
+
+@layer components {
+  /* Square icon button used in headers */
+  .icon-btn {
+    @apply grid size-10 shrink-0 place-items-center rounded-md border border-line bg-hull text-foam transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Neutral primary (Save, Change folder). Record is the only orange button. */
+  .btn-primary {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foam px-4 font-medium text-deep transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line px-4 font-medium text-foam transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-danger {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md bg-signal px-4 font-medium text-deep transition-colors hover:brightness-110;
+  }
+
+  .field {
+    @apply h-10 w-full rounded-md border border-line bg-deep px-3 text-foam placeholder:text-silt focus:border-buoy focus:outline-none;
+  }
+
+  .panel {
+    @apply rounded-lg border border-line bg-hull;
+  }
+
+  /* Modal backdrop */
+  .backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-deep/80 p-4;
+  }
+}
