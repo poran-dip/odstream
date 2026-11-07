@@ -1,7 +1,8 @@
 # Ignore everything user generated
 **
 
-# But keep the folders and their README.md files, and this .gitignore
+# But keep this .gitignore and runtime-env.ts (the detections/, recordings/
+# and screenshots/ folders are created at runtime when first written to)
 !*/
 !.gitignore
 !README.md

@@ -1,5 +1,5 @@
 import { AlertCircle, AlertTriangle, CheckCircle, Info, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export type ToastType = "success" | "error" | "warning" | "info";
 
@@ -14,15 +14,23 @@ const ToastDisplay: React.FC<ToastDisplayProps> = ({
   type = "info",
   onClose,
 }) => {
+  // Keep the latest onClose in a ref so the auto-close timer only restarts
+  // when the message changes. Callers pass inline arrows (a new function on
+  // every render), which would otherwise reset the 5s timer on each render.
+  const onCloseRef = useRef(onClose);
   useEffect(() => {
-    if (!message || !onClose) return;
+    onCloseRef.current = onClose;
+  });
+
+  useEffect(() => {
+    if (!message || !onCloseRef.current) return;
 
     const timeout = setTimeout(() => {
-      onClose();
+      onCloseRef.current?.();
     }, 5000);
 
     return () => clearTimeout(timeout);
-  }, [message, onClose]);
+  }, [message]);
 
   if (!message) return null;
 

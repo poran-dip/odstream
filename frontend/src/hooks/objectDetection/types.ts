@@ -19,6 +19,11 @@ export interface DetectionContext {
   setIsRecording: Setter<boolean>;
   setDetectionStartTime: Setter<number>;
 
+  // Live performance metrics (from the backend's "perf_update" event)
+  setCurrentFps: Setter<number>;
+  setLatencyMs: Setter<number | null>;
+  setDetectionCount: Setter<number>;
+
   // Active source
   selectedSource: CameraSource | null;
   setSelectedSource: Setter<CameraSource | null>;

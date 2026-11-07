@@ -103,5 +103,6 @@ def debug():
                 if hasattr(camera_manager, "remote_stream_active")
                 else None
             ),
+            "latency": camera_manager.get_latency_stats(),
         }
     )

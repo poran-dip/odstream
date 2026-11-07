@@ -11,6 +11,7 @@ back together into the public ``CameraManager`` class:
     lifecycle.py    - starting / stopping / switching camera sources
     frames.py       - reading frames, applying video settings, the MJPEG generator
     capture.py      - snapshots and video recording
+    perf.py         - FPS / latency metrics and benchmark logging
 
 All mixins share state through ``self``; every attribute they rely on is
 initialised in ``CameraManager.__init__``.
@@ -21,6 +22,7 @@ from camera.detection_log import DetectionLogMixin
 from camera.frames import FrameMixin
 from camera.lifecycle import CameraLifecycleMixin
 from camera.model import ModelMixin
+from camera.perf import PerfMixin
 from camera.remote import RemoteStreamMixin
 
 __all__ = [
@@ -29,5 +31,6 @@ __all__ = [
     "DetectionLogMixin",
     "FrameMixin",
     "ModelMixin",
+    "PerfMixin",
     "RemoteStreamMixin",
 ]

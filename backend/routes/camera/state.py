@@ -17,6 +17,8 @@ def init_socketio(socketio_instance):
     """Initialize socketio instance for this blueprint"""
     global SOCKETIO
     SOCKETIO = socketio_instance
+    # Lets the manager emit "perf_update" from the frame loop
+    camera_manager.set_socketio(socketio_instance)
 
 
 def broadcast(event, payload):
