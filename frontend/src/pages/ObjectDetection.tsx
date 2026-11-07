@@ -93,6 +93,9 @@ function ObjectDetectionPage() {
             isDetecting={d.isDetecting}
             isRecording={d.isRecording}
             detectionStartTime={d.detectionStartTime}
+            currentFps={d.currentFps}
+            latencyMs={d.latencyMs}
+            detectionCount={d.detectionCount}
             imgRef={d.imgRef}
           />
 

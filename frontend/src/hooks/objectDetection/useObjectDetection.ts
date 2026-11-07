@@ -30,6 +30,11 @@ export function useObjectDetection() {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [detectionStartTime, setDetectionStartTime] = useState(Number);
 
+  // --- Live performance metrics (see useDetectionSocket "perf_update") ---
+  const [currentFps, setCurrentFps] = useState<number>(0);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [detectionCount, setDetectionCount] = useState<number>(0);
+
   // --- Source selection ---
   const [selectedSource, setSelectedSource] = useState<CameraSource | null>(
     null,
@@ -64,6 +69,9 @@ export function useObjectDetection() {
     isRecording,
     setIsRecording,
     setDetectionStartTime,
+    setCurrentFps,
+    setLatencyMs,
+    setDetectionCount,
     selectedSource,
     setSelectedSource,
     isLoadingSource,
@@ -91,6 +99,9 @@ export function useObjectDetection() {
     isDetecting,
     isRecording,
     detectionStartTime,
+    currentFps,
+    latencyMs,
+    detectionCount,
     selectedSource,
     isLoadingSource,
     loading,

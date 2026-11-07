@@ -53,6 +53,9 @@ export function useDetectionSocket(ctx: DetectionContext) {
     setDetectionStartTime,
     setIsRecording,
     setSettings,
+    setCurrentFps,
+    setLatencyMs,
+    setDetectionCount,
     imgRef,
     showToast,
   } = ctx;
@@ -110,10 +113,21 @@ export function useDetectionSocket(ctx: DetectionContext) {
         setTimeout(() => attachMjpegStream(imgRef), 100);
       } else {
         setIsDetecting(false);
+        // Camera stopped: clear the live metrics
+        setCurrentFps(0);
+        setLatencyMs(null);
+        setDetectionCount(0);
         if (imgRef.current) {
           imgRef.current.src = "";
         }
       }
+    });
+
+    // --- FPS / latency / detection count, sent once a second ---
+    newSocket.on("perf_update", (data) => {
+      setCurrentFps(data.fps);
+      setLatencyMs(data.pipeline_latency_ms);
+      setDetectionCount(data.detection_count ?? 0);
     });
 
     // --- Recording started / stopped ---

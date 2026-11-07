@@ -8,6 +8,10 @@ interface DetectionVideoProps {
   isDetecting: boolean;
   isRecording: boolean;
   detectionStartTime: number;
+  /** Live metrics from the backend's "perf_update" event */
+  currentFps: number;
+  latencyMs: number | null;
+  detectionCount: number;
   /** The MJPEG stream is attached to this <img> by useDetectionSocket */
   imgRef: RefObject<HTMLImageElement | null>;
 }
@@ -16,6 +20,9 @@ export default function DetectionVideo({
   isDetecting,
   isRecording,
   detectionStartTime,
+  currentFps,
+  latencyMs,
+  detectionCount,
   imgRef,
 }: DetectionVideoProps) {
   return (
@@ -48,13 +55,16 @@ export default function DetectionVideo({
                 Time elapsed: {formatElapsedTime(detectionStartTime)}
               </p>
             </div>
-            {/* Placeholders until object count / FPS are sent by the backend */}
+            {/* "—" until the first perf_update arrives */}
             <div className="text-right">
               <p className="text-sm text-slate-400">
-                Objects detected: 0 {/*detectedObjects.length*/}
+                Objects detected: {detectionCount}
               </p>
               <p className="text-sm text-slate-400">
-                FPS: 0.0 {/*currentFPS*/}
+                FPS: {currentFps > 0 ? currentFps.toFixed(1) : "—"}
+              </p>
+              <p className="text-sm text-slate-400">
+                Pipeline Latency: {latencyMs !== null ? `${latencyMs}ms` : "—"}
               </p>
             </div>
           </div>
