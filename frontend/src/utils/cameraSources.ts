@@ -6,11 +6,14 @@ import type { CameraSource } from "./storage";
 /**
  * Find the known source that corresponds to the backend's source.
  * Local sources match by device index, remote sources by URL.
+ * Returns null when there's no source (the backend sends source: null when
+ * the camera stops).
  */
 export const findMatchingSource = (
-  backendSource: CameraSource,
+  backendSource: CameraSource | null | undefined,
   availableSources: CameraSource[],
 ): CameraSource | null => {
+  if (!backendSource) return null;
   return (
     availableSources.find((src) => {
       if (src.type === "local" && backendSource.type === "local") {
