@@ -1,1 +1,78 @@
 @import "tailwindcss";
+/* Archivo variable, bundled (works offline): weight 100-900, width 62-125% */
+@import "@fontsource-variable/archivo/wdth.css";
+
+/*
+ * ROV console theme.
+ * Dark sea-green surfaces in clearly separated steps (well < page <
+ * panel < raised), with borders >= 3:1 against both page and panels.
+ * Buoy orange is reserved for the primary action (Record), keyboard focus
+ * and slider thumbs. Signal red means recording / stop, kelp green live.
+ */
+@theme {
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-well: #020606; /* behind video, darkest */
+  --color-deep: #030e0d; /* page background */
+  --color-hull: #143934; /* panels (1.55:1 vs page) */
+  --color-raised: #1c4943; /* hover / selected rows (1.25:1 vs panels) */
+  --color-line: #418b81; /* borders: 4.88:1 vs page, 3.14:1 vs panels */
+  --color-foam: #ebf9f5; /* primary text */
+  --color-silt: #a2cdc7; /* secondary text (>= 5.8:1 on every surface) */
+  --color-buoy: #ff7a1a; /* primary action, focus */
+  --color-signal: #ff6166; /* recording, destructive */
+  --color-kelp: #3fe29a; /* live */
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-deep font-sans text-foam antialiased;
+  }
+
+  /* One focus style everywhere, visible on every surface */
+  :focus-visible {
+    outline: 2px solid var(--color-buoy);
+    outline-offset: 2px;
+  }
+
+  input[type="range"] {
+    accent-color: var(--color-buoy);
+  }
+}
+
+@layer components {
+  /* Square icon button used in headers */
+  .icon-btn {
+    @apply grid size-10 shrink-0 place-items-center rounded-md border border-line bg-hull text-foam transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Neutral primary (Save, Change folder). Record is the only orange button. */
+  .btn-primary {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foam px-4 font-medium text-deep transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line px-4 font-medium text-foam transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-danger {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md bg-signal px-4 font-medium text-deep transition-colors hover:brightness-110;
+  }
+
+  .field {
+    @apply h-10 w-full rounded-md border border-line bg-deep px-3 text-foam placeholder:text-silt focus:border-buoy focus:outline-none;
+  }
+
+  .panel {
+    @apply rounded-lg border border-line bg-hull;
+  }
+
+  /* Modal backdrop */
+  .backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-deep/80 p-4;
+  }
+}

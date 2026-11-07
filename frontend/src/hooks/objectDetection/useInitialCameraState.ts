@@ -8,6 +8,7 @@ import {
   findMatchingSource,
 } from "../../utils/cameraSources";
 import { DEFAULT_SOURCES } from "../../utils/config";
+import { startTimeFromUptime } from "../../utils/formatters";
 import { storageUtils } from "../../utils/storage";
 import type { DetectionContext } from "./types";
 
@@ -60,7 +61,8 @@ export function useInitialCameraState(ctx: DetectionContext) {
           setIsDetecting(response.active || false);
           setIsRecording(response.recording || false);
           if (response.active) {
-            setDetectionStartTime(Date.now());
+            // Real camera uptime from the backend, not time since page load
+            setDetectionStartTime(startTimeFromUptime(response.uptime_seconds));
           }
         } else {
           console.warn("No source in camera status response, using default");

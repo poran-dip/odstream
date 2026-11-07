@@ -33,6 +33,8 @@ class CameraLifecycleMixin:
             # Handle remote source
             if self.remote_camera:
                 success, message = self._start_remote_detection()
+                if success:
+                    self.camera_started_at = time.time()
                 return success, message
 
             # Handle local camera - only if NOT remote
@@ -55,6 +57,7 @@ class CameraLifecycleMixin:
             self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, Config.CAMERA_HEIGHT)
             self.camera.set(cv2.CAP_PROP_FPS, Config.CAMERA_FPS)
 
+            self.camera_started_at = time.time()
             print(f"Camera started successfully at index {camera_index}")
             return True, f"Camera started successfully at index {camera_index}"
 
@@ -64,6 +67,8 @@ class CameraLifecycleMixin:
 
     def stop_camera(self):
         """Stop camera capture"""
+        # Any stop (including a source change) resets the uptime
+        self.camera_started_at = None
         try:
             # Stop recording if active
             if self.is_recording:
@@ -152,3 +157,14 @@ class CameraLifecycleMixin:
         return (
             self.camera is not None and self.camera.isOpened() if self.camera else False
         )
+
+    def get_uptime_seconds(self):
+        """Seconds since the current camera session started, or None if off.
+
+        Sent to clients as ``uptime_seconds`` so every tab shows the real
+        camera uptime instead of the time since it connected. A relative value
+        (not a timestamp) avoids clock differences between server and clients.
+        """
+        if self.camera_started_at is None or not self.is_camera_active():
+            return None
+        return round(time.time() - self.camera_started_at, 1)

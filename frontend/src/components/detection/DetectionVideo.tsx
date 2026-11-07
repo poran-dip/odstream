@@ -1,6 +1,9 @@
-// Live video panel: MJPEG <img>, RUNNING/RECORDING badges and stats footer.
+// Live video panel: MJPEG <img>, live/recording pills, a full-screen button
+// and the readout strip (FPS, latency, objects, elapsed) on its bottom edge.
 
-import type { RefObject } from "react";
+import { Maximize2, Minimize2 } from "lucide-react";
+import { type RefObject, useEffect, useRef, useState } from "react";
+import { useFullscreen } from "../../hooks/useFullscreen";
 import { formatElapsedTime } from "../../utils/formatters";
 import VideoContainer from "../VideoContainer";
 
@@ -25,61 +28,128 @@ export default function DetectionVideo({
   detectionCount,
   imgRef,
 }: DetectionVideoProps) {
+  // The whole panel (video + pills + readouts) goes full screen
+  const panelRef = useRef<HTMLElement>(null);
+  const { isFullscreen, toggle } = useFullscreen(panelRef);
+
+  const toggleFullscreen = () => {
+    // Rotate phones to match the feed: landscape unless the camera is portrait
+    const img = imgRef.current;
+    const fit =
+      img && img.naturalHeight > img.naturalWidth ? "portrait" : "landscape";
+    toggle(fit);
+  };
+
+  // Re-render once a second while the camera is on so the elapsed readout
+  // ticks on its own (perf_update only re-renders when a value changes)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!isDetecting) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [isDetecting]);
+
+  // "—" until the camera is on and the first perf_update has arrived
+  const readouts = [
+    {
+      label: "frames per second",
+      value: isDetecting && currentFps > 0 ? currentFps.toFixed(1) : "—",
+    },
+    {
+      label: "ms pipeline latency",
+      value: isDetecting && latencyMs !== null ? latencyMs.toFixed(1) : "—",
+    },
+    {
+      label: "objects in view",
+      value: isDetecting ? String(detectionCount) : "—",
+    },
+    {
+      label: "elapsed",
+      value: isDetecting ? formatElapsedTime(detectionStartTime) : "—",
+    },
+  ];
+
   return (
     <VideoContainer
+      containerRef={panelRef}
+      fullscreen={isFullscreen}
       showPlaceholder={!isDetecting}
-      placeholderTitle="AI Detection Ready"
-      placeholderDescription="Click 'Start Detection' to begin real-time object detection"
+      placeholderTitle="Camera is off"
+      placeholderDescription="Turn the camera on to start the live feed. Detection runs while you record."
       statusIndicators={
         <>
-          {isDetecting && (
-            <div className="bg-green-500/20 border border-green-500/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-green-400 animate-pulse">
-              ● RUNNING
-            </div>
-          )}
+          {isDetecting && <StatusPill dotClass="bg-kelp">Live</StatusPill>}
           {isRecording && (
-            <div className="bg-red-500/20 border border-red-500/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-red-400 animate-pulse">
-              ● RECORDING
-            </div>
+            <StatusPill dotClass="bg-signal motion-safe:animate-pulse">
+              Recording
+            </StatusPill>
           )}
         </>
       }
-      bottomContent={
-        isDetecting ? (
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-200 mb-1">
-                Detection Active
-              </h3>
-              <p className="text-slate-400">
-                Time elapsed: {formatElapsedTime(detectionStartTime)}
-              </p>
-            </div>
-            {/* "—" until the first perf_update arrives */}
-            <div className="text-right">
-              <p className="text-sm text-slate-400">
-                Objects detected: {detectionCount}
-              </p>
-              <p className="text-sm text-slate-400">
-                FPS: {currentFps > 0 ? currentFps.toFixed(1) : "—"}
-              </p>
-              <p className="text-sm text-slate-400">
-                Pipeline Latency: {latencyMs !== null ? `${latencyMs}ms` : "—"}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <p className="text-slate-400 text-center">
-            Start detection to view real-time statistics
-          </p>
+      topRightActions={
+        // Stays visible in full screen even if the camera stops, so there's
+        // always a way back out
+        (isDetecting || isFullscreen) && (
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit full screen" : "Full screen"}
+            aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+            aria-pressed={isFullscreen}
+            className="grid size-9 place-items-center rounded-md bg-deep/85 text-foam transition-colors hover:bg-deep"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="size-5" />
+            ) : (
+              <Maximize2 className="size-5" />
+            )}
+          </button>
         )
+      }
+      bottomContent={
+        <dl className="grid grid-cols-2 sm:grid-cols-4">
+          {readouts.map(({ label, value }) => (
+            <div
+              key={label}
+              className={`border-line px-4 not-first:border-l max-sm:nth-3:border-l-0 max-sm:nth-[n+3]:border-t ${
+                isFullscreen ? "py-2" : "py-3"
+              }`}
+            >
+              {/* Condensed Archivo with fixed-width digits so values don't jitter */}
+              <dd
+                className={`font-stretch-75% font-semibold leading-none tabular-nums ${
+                  isFullscreen ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
+                } ${value === "—" ? "text-silt" : "text-foam"}`}
+              >
+                {value}
+              </dd>
+              <dt className="mt-1.5 text-sm text-silt">{label}</dt>
+            </div>
+          ))}
+        </dl>
       }
     >
       <img
         ref={imgRef}
-        alt="Video Stream"
-        className="w-full h-full object-cover"
+        alt="Live camera feed"
+        className="h-full w-full object-contain"
       />
     </VideoContainer>
+  );
+}
+
+/** Small pill over the video, e.g. "● Live". */
+function StatusPill({
+  dotClass,
+  children,
+}: {
+  dotClass: string;
+  children: string;
+}) {
+  return (
+    <span className="flex items-center gap-2 rounded-full bg-deep/85 px-3 py-1 text-sm font-medium">
+      <span className={`size-2 rounded-full ${dotClass}`} aria-hidden="true" />
+      {children}
+    </span>
   );
 }

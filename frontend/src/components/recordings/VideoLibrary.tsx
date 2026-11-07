@@ -1,7 +1,7 @@
-// Right-hand "Video Library" panel: refresh / change-directory buttons and
-// the list of recordings.
+// Right-hand library panel: folder + refresh controls and the list of
+// recordings.
 
-import { Folder, RefreshCw, Settings } from "lucide-react";
+import { FolderOpen, RefreshCw } from "lucide-react";
 import type { VideoFile } from "../../utils/api";
 import VideoListItem from "./VideoListItem";
 
@@ -34,75 +34,74 @@ export default function VideoLibrary({
   editingId,
   ...rowProps
 }: VideoLibraryProps) {
+  const count = recordings.length;
+
   return (
-    <div className="lg:col-span-1 flex flex-col h-full">
-      <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl overflow-hidden h-full flex flex-col">
-        {/* Panel header */}
-        <div className="p-6 border-b border-slate-600/30">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-200">
-              Video Library
-            </h3>
-            <span className="text-sm text-slate-400">
-              {recordings.length} videos
+    <aside className="panel flex min-h-0 flex-col self-start lg:max-h-[calc(100vh-7rem)]">
+      {/* Panel header */}
+      <div className="border-b border-line p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold">
+            Library{" "}
+            <span className="font-normal text-silt tabular-nums">
+              {count} {count === 1 ? "recording" : "recordings"}
             </span>
-          </div>
-
-          <p className="text-sm text-slate-400 mb-4 truncate">
-            Path: {currentPath}
-          </p>
-
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={loading}
-              className="w-full bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:opacity-50"
-            >
-              <RefreshCw
-                className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
-              />
-              <span>{loading ? "Loading..." : "Refresh Videos"}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onChangeDirectory}
-              className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105"
-            >
-              <Settings className="w-5 h-5" />
-              <span>Change Directory</span>
-            </button>
-          </div>
+          </h2>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={loading}
+            title="Refresh"
+            aria-label="Refresh recordings"
+            className="icon-btn size-8"
+          >
+            <RefreshCw
+              className={`size-4 ${loading ? "motion-safe:animate-spin" : ""}`}
+            />
+          </button>
         </div>
 
-        {/* List (or empty state) */}
-        {recordings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center h-full p-6">
-            <Folder className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-300 mb-2">
-              {loading ? "Loading Videos..." : "No Videos Found"}
-            </h3>
-            <p className="text-slate-400 text-sm">
-              {loading
-                ? "Please wait..."
-                : "Check your directory path or refresh to load videos"}
-            </p>
-          </div>
-        ) : (
-          <div className="max-h-100 h-full overflow-y-auto">
-            {recordings.map((video) => (
-              <VideoListItem
-                key={video.id}
-                video={video}
-                isSelected={currentVideo?.id === video.id}
-                isEditing={editingId === video.id}
-                {...rowProps}
-              />
-            ))}
-          </div>
-        )}
+        {/* Folder the backend reads recordings from */}
+        <button
+          type="button"
+          onClick={onChangeDirectory}
+          title={currentPath}
+          className="mt-3 flex w-full items-center gap-2 rounded-md border border-line px-3 py-2 text-left text-sm transition-colors hover:bg-raised"
+        >
+          <FolderOpen className="size-4 shrink-0 text-silt" />
+          <span className="min-w-0 flex-1 truncate text-silt" dir="rtl">
+            {/* rtl keeps the end of long paths (the folder name) visible */}
+            <bdi>{currentPath || "No folder set"}</bdi>
+          </span>
+          <span className="shrink-0 font-medium">Change</span>
+        </button>
       </div>
-    </div>
+
+      {/* List (or empty state) */}
+      {count === 0 ? (
+        <div className="p-6 text-center">
+          <p className="font-medium">
+            {loading ? "Loading recordings…" : "This folder has no recordings"}
+          </p>
+          {!loading && (
+            <p className="mt-1 text-sm text-silt">
+              Record on the live page, or point the library at another folder.
+            </p>
+          )}
+        </div>
+      ) : (
+        <ul className="min-h-0 flex-1 divide-y divide-line overflow-y-auto">
+          {recordings.map((video) => (
+            <VideoListItem
+              key={video.id}
+              video={video}
+              isSelected={currentVideo?.id === video.id}
+              isEditing={editingId === video.id}
+              {...rowProps}
+            />
+          ))}
+        </ul>
+      )}
+    </aside>
   );
 }

@@ -16,9 +16,6 @@ import PageHeader from "../components/PageHeader";
 import ToastDisplay from "../components/ui/ToastDisplay";
 import { useObjectDetection } from "../hooks/objectDetection/useObjectDetection";
 
-const ICON_BUTTON_CLASS =
-  "bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105";
-
 function ObjectDetectionPage() {
   const navigate = useNavigate();
   const d = useObjectDetection();
@@ -29,110 +26,101 @@ function ObjectDetectionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <PageHeader
-          title="ODStream"
-          description="Real-time object detection & live streaming"
-          rightActions={
-            <div className="w-full flex justify-between gap-3">
-              {/* Camera Source Dropdown - takes most space */}
-              <SourceDropdown
-                isOpen={d.showSourceDropdown}
-                onToggle={() => d.setShowSourceDropdown(!d.showSourceDropdown)}
-                isLoading={isLoadingSource}
-                selectedSource={selectedSource}
-                sources={sources.getAllSources()}
-                onSelect={d.handleSourceChange}
-              />
+    <div className="mx-auto max-w-350 px-4 pt-4 sm:px-6 sm:pt-5">
+      <PageHeader
+        title="ODStream"
+        description="Live object detection"
+        rightActions={
+          <>
+            <SourceDropdown
+              isOpen={d.showSourceDropdown}
+              onToggle={() => d.setShowSourceDropdown(!d.showSourceDropdown)}
+              isLoading={isLoadingSource}
+              selectedSource={selectedSource}
+              sources={sources.getAllSources()}
+              onSelect={d.handleSourceChange}
+            />
+            <button
+              type="button"
+              title="Settings"
+              aria-label="Settings"
+              onClick={() => d.setShowSettings(true)}
+              className="icon-btn"
+            >
+              <Settings className="size-5" />
+            </button>
+            <button
+              type="button"
+              title="Recordings"
+              onClick={() => navigate("/recordings")}
+              className="btn-secondary shrink-0 bg-hull px-3"
+            >
+              <Folder className="size-5" />
+              <span className="max-sm:sr-only">Recordings</span>
+            </button>
+          </>
+        }
+      />
 
-              {/* Settings and Folder buttons container */}
-              <div className="flex items-center space-x-3 shrink-0">
-                <button
-                  type="button"
-                  title="Settings"
-                  onClick={() => d.setShowSettings(true)}
-                  className={ICON_BUTTON_CLASS}
-                >
-                  <Settings className="w-5 h-5 text-slate-300" />
-                </button>
-                <button
-                  type="button"
-                  title="Recordings"
-                  onClick={() => navigate("/recordings")}
-                  className={ICON_BUTTON_CLASS}
-                >
-                  <Folder className="w-5 h-5 text-slate-300" />
-                </button>
-              </div>
-            </div>
-          }
+      {d.toast && (
+        <ToastDisplay
+          message={d.toast.message}
+          type={d.toast.type}
+          onClose={() => d.setToast(null)}
+        />
+      )}
+
+      {/* Stop Camera Confirmation Dialog */}
+      {d.showStopConfirmation && (
+        <StopCameraDialog
+          onCancel={() => d.setShowStopConfirmation(false)}
+          onConfirm={d.confirmStopDetection}
+        />
+      )}
+
+      {/* Video first; the control rail sits beside it on wide screens */}
+      <main className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <DetectionVideo
+          isDetecting={d.isDetecting}
+          isRecording={d.isRecording}
+          detectionStartTime={d.detectionStartTime}
+          currentFps={d.currentFps}
+          latencyMs={d.latencyMs}
+          detectionCount={d.detectionCount}
+          imgRef={d.imgRef}
         />
 
-        {d.toast && (
-          <ToastDisplay
-            message={d.toast.message}
-            type={d.toast.type}
-            onClose={() => d.setToast(null)}
-          />
-        )}
+        <DetectionControls
+          isDetecting={d.isDetecting}
+          isRecording={d.isRecording}
+          loading={d.loading}
+          onStartCamera={d.startDetection}
+          onStopCamera={d.handleStopDetectionClick}
+          onStartRecording={d.handleStartRecording}
+          onStopRecording={d.handleStopRecording}
+          onTakeSnapshot={d.handleTakeSnapshot}
+        />
+      </main>
 
-        {/* Stop Camera Confirmation Dialog */}
-        {d.showStopConfirmation && (
-          <StopCameraDialog
-            onCancel={() => d.setShowStopConfirmation(false)}
-            onConfirm={d.confirmStopDetection}
-          />
-        )}
+      <Footer />
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Video Player */}
-          <DetectionVideo
-            isDetecting={d.isDetecting}
-            isRecording={d.isRecording}
-            detectionStartTime={d.detectionStartTime}
-            currentFps={d.currentFps}
-            latencyMs={d.latencyMs}
-            detectionCount={d.detectionCount}
-            imgRef={d.imgRef}
-          />
-
-          {/* Controls Panel */}
-          <DetectionControls
-            isDetecting={d.isDetecting}
-            isRecording={d.isRecording}
-            loading={d.loading}
-            selectedSource={selectedSource}
-            onStartCamera={d.startDetection}
-            onStopCamera={d.handleStopDetectionClick}
-            onStartRecording={d.handleStartRecording}
-            onStopRecording={d.handleStopRecording}
-            onTakeSnapshot={d.handleTakeSnapshot}
-          />
-        </div>
-
-        <Footer />
-
-        {/* Settings Modal */}
-        {d.showSettings && (
-          <SettingsModal
-            settings={d.settings}
-            setSettings={d.setSettings}
-            onSave={d.updateVideoSettings}
-            saving={d.loading}
-            onClose={() => d.setShowSettings(false)}
-            customSources={sources.customSources}
-            newSourceName={sources.newSourceName}
-            setNewSourceName={sources.setNewSourceName}
-            newSourceUrl={sources.newSourceUrl}
-            setNewSourceUrl={sources.setNewSourceUrl}
-            onAddSource={sources.addCustomSource}
-            onDeleteSource={sources.deleteCustomSource}
-          />
-        )}
-      </div>
+      {/* Settings Modal */}
+      {d.showSettings && (
+        <SettingsModal
+          settings={d.settings}
+          setSettings={d.setSettings}
+          onSave={d.updateVideoSettings}
+          saving={d.loading}
+          onClose={() => d.setShowSettings(false)}
+          customSources={sources.customSources}
+          newSourceName={sources.newSourceName}
+          setNewSourceName={sources.setNewSourceName}
+          newSourceUrl={sources.newSourceUrl}
+          setNewSourceUrl={sources.setNewSourceUrl}
+          onAddSource={sources.addCustomSource}
+          onDeleteSource={sources.deleteCustomSource}
+        />
+      )}
     </div>
   );
 }

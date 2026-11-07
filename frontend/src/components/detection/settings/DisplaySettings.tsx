@@ -1,5 +1,5 @@
 // Left column of the settings modal: brightness / contrast / saturation.
-// Changes are local until "Save Settings" is clicked in the modal.
+// Changes are local until "Save image settings" is clicked in the modal.
 
 import type { Dispatch, SetStateAction } from "react";
 import type { VideoSettings } from "../../../utils/storage";
@@ -14,11 +14,13 @@ export default function DisplaySettings({
   setSettings,
 }: DisplaySettingsProps) {
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4 text-slate-200">
-        Display Settings
-      </h3>
-      <div className="space-y-6">
+    <section>
+      <h3 className="font-semibold">Image</h3>
+      <p className="mt-1 text-sm text-silt">
+        Applied to the live feed, snapshots and recordings.
+      </p>
+
+      <div className="mt-5 space-y-5">
         {/* Brightness: -100..100, stored as-is */}
         <SliderSetting
           label="Brightness"
@@ -61,20 +63,20 @@ export default function DisplaySettings({
         />
 
         {/* Always on for now (annotations are applied while recording) */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-start gap-3">
           <input
             type="checkbox"
             id="annotateYOLO"
             checked={true}
             disabled={true}
-            className="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-1 size-4 accent-buoy disabled:cursor-not-allowed"
           />
-          <label htmlFor="annotateYOLO" className="text-sm text-slate-400">
-            Enable YOLO Annotations
+          <label htmlFor="annotateYOLO" className="text-sm text-silt">
+            Draw detection boxes. Always on while recording.
           </label>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -89,7 +91,7 @@ interface SliderSettingProps {
   display: string | number;
 }
 
-/** Labelled range input with the current value shown underneath. */
+/** Labelled range input with its current value at the end of the label row. */
 function SliderSetting({
   label,
   min,
@@ -101,12 +103,12 @@ function SliderSetting({
 }: SliderSettingProps) {
   return (
     <div>
-      <label
-        htmlFor={label}
-        className="block text-sm font-medium mb-2 text-slate-300"
-      >
-        {label}
-      </label>
+      <div className="mb-2 flex items-baseline justify-between">
+        <label htmlFor={label} className="text-sm font-medium">
+          {label}
+        </label>
+        <span className="text-sm tabular-nums text-silt">{display}</span>
+      </div>
       <input
         id={label}
         type="range"
@@ -115,9 +117,8 @@ function SliderSetting({
         step={step}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value, 10))}
-        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+        className="w-full cursor-pointer"
       />
-      <span className="text-sm text-slate-400 mt-1 block">{display}</span>
     </div>
   );
 }

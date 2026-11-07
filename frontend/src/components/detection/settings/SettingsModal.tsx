@@ -1,5 +1,6 @@
-// Settings modal: display settings (left) + camera sources (right).
+// Settings modal: image adjustments (left) + camera sources (right).
 
+import { X } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { CameraSource, VideoSettings } from "../../../utils/storage";
 import CameraSourcesSettings from "./CameraSourcesSettings";
@@ -32,19 +33,36 @@ export default function SettingsModal({
   ...sourceProps
 }: SettingsModalProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-2xl p-6 w-200 max-w-[90vw] max-h-[80vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-6 text-slate-100">Settings</h2>
+    <div className="backdrop">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
+        className="panel flex max-h-[85vh] w-full max-w-3xl flex-col"
+      >
+        <div className="flex items-center justify-between border-b border-line px-6 py-4">
+          <h2 id="settings-title" className="text-lg font-semibold">
+            Settings
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close settings"
+            className="-m-1 rounded-md p-1 text-silt transition-colors hover:text-foam"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Side - Display Settings */}
+        <div className="grid flex-1 grid-cols-1 gap-x-8 gap-y-6 overflow-y-auto p-6 md:grid-cols-2">
           <DisplaySettings settings={settings} setSettings={setSettings} />
-
-          {/* Right Side - Camera Sources */}
           <CameraSourcesSettings {...sourceProps} />
         </div>
 
-        <div className="flex justify-between mt-8">
+        <div className="flex justify-end gap-2 border-t border-line px-6 py-4">
+          <button type="button" onClick={onClose} className="btn-secondary">
+            Close
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -55,16 +73,9 @@ export default function SettingsModal({
               });
             }}
             disabled={saving}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+            className="btn-primary"
           >
-            {saving ? "Saving..." : "Save Settings"}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
-          >
-            Close
+            {saving ? "Saving…" : "Save image settings"}
           </button>
         </div>
       </div>

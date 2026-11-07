@@ -28,6 +28,7 @@ def start_camera():
             {
                 "active": True,
                 "source": camera_manager.camera_source,
+                "uptime_seconds": camera_manager.get_uptime_seconds(),
                 "message": message,
             },
         )
@@ -60,6 +61,7 @@ def change_camera_source():
             {
                 "active": True,
                 "source": camera_manager.camera_source,
+                "uptime_seconds": camera_manager.get_uptime_seconds(),
                 "message": message,
             },
         )
@@ -103,6 +105,7 @@ def is_camera_active():
                 "data": {
                     "active": True,
                     "source": camera_manager.camera_source,
+                    "uptime_seconds": camera_manager.get_uptime_seconds(),
                     "detection_enabled": camera_manager.detection_enabled,
                 },
             }

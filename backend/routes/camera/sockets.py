@@ -18,6 +18,7 @@ def handle_connect(socketio_instance):
         {
             "active": camera_manager.is_camera_active(),
             "source": camera_manager.camera_source,
+            "uptime_seconds": camera_manager.get_uptime_seconds(),
             "detection_enabled": camera_manager.detection_enabled,
         },
     )

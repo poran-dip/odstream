@@ -64,6 +64,10 @@ class CameraManager(
         self.remote_stream_thread = None
         self.remote_stream_active = False
 
+        # time.time() when the current camera session started (see
+        # CameraLifecycleMixin.get_uptime_seconds); None while stopped
+        self.camera_started_at = None
+
         # --- Performance metrics (see PerfMixin) ---
         self._last_detection_count = 0
         self._socketio = None  # set via set_socketio() from the routes
