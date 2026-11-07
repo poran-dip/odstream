@@ -16,34 +16,37 @@ export default function PathDialog({
   onConfirm,
 }: PathDialogProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-slate-800 border border-slate-600 rounded-2xl p-6 w-full max-w-md">
-        <h3 className="text-xl font-semibold mb-4">Change Video Directory</h3>
-        <p className="text-sm text-slate-400 mb-4 truncate">
-          Currently in:{" "}
-          <span className="font-mono text-slate-300">{currentPath}</span>
+    <div className="backdrop">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="path-dialog-title"
+        className="panel w-full max-w-md p-6"
+      >
+        <h2 id="path-dialog-title" className="text-lg font-semibold">
+          Change recordings folder
+        </h2>
+        <p className="mt-2 text-sm text-silt wrap-break-word">
+          The library lists video files from this folder on the computer running
+          the backend. Currently: {currentPath}
         </p>
+        <label htmlFor="path-input" className="mt-5 block text-sm font-medium">
+          Folder path
+        </label>
         <input
+          id="path-input"
           type="text"
           value={newPath ?? ""}
           onChange={(e) => setNewPath(e.target.value)}
-          placeholder="Enter directory path (e.g., D:/Videos/)"
-          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="D:/Videos/"
+          className="field mt-2"
         />
-        <div className="flex justify-end space-x-3 mt-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-slate-400 hover:text-slate-300"
-          >
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" onClick={onCancel} className="btn-secondary">
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
-          >
-            Change Path
+          <button type="button" onClick={onConfirm} className="btn-primary">
+            Change folder
           </button>
         </div>
       </div>

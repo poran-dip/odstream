@@ -20,63 +20,59 @@ const RecordingsPage: React.FC<RecordingsPageProps> = ({ onBack }) => {
   const { library, rename, directory } = useRecordings();
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
-      <div className="max-w-7xl mx-auto p-6 h-full flex flex-col">
-        <PageHeader
-          title="ODReplay"
-          description="Browse and play your recorded videos"
-          showBackButton
-          onBack={onBack}
+    <div className="mx-auto max-w-350 px-4 pt-4 sm:px-6 sm:pt-5">
+      <PageHeader
+        title="ODReplay"
+        description="Recorded footage"
+        showBackButton
+        onBack={onBack}
+      />
+
+      {library.error && (
+        <ToastDisplay
+          message={library.error}
+          type="error"
+          onClose={() => library.setError("")}
+        />
+      )}
+
+      {/* Path Change Dialog */}
+      {directory.showPathDialog && (
+        <PathDialog
+          currentPath={directory.currentPath}
+          newPath={directory.newPath}
+          setNewPath={directory.setNewPath}
+          onCancel={() => directory.setShowPathDialog(false)}
+          onConfirm={directory.handlePathChange}
+        />
+      )}
+
+      {/* Player first; the library sits beside it on wide screens */}
+      <main className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <RecordingPlayer
+          currentVideo={library.currentVideo}
+          hasRecordings={library.recordings.length !== 0}
         />
 
-        {library.error && (
-          <ToastDisplay
-            message={library.error}
-            type="error"
-            onClose={() => library.setError("")}
-          />
-        )}
+        <VideoLibrary
+          recordings={library.recordings}
+          currentVideo={library.currentVideo}
+          currentPath={directory.currentPath}
+          loading={library.loading}
+          onRefresh={() => library.loadVideos()}
+          onChangeDirectory={directory.openPathDialog}
+          editingId={rename.editingId}
+          editingName={rename.editingName}
+          setEditingName={rename.setEditingName}
+          onPlay={library.handlePlayVideo}
+          onRenameStart={rename.handleRenameStart}
+          onRenameConfirm={rename.handleRenameConfirm}
+          onRenameCancel={rename.handleRenameCancel}
+          onDelete={library.handleDeleteVideo}
+        />
+      </main>
 
-        {/* Path Change Dialog */}
-        {directory.showPathDialog && (
-          <PathDialog
-            currentPath={directory.currentPath}
-            newPath={directory.newPath}
-            setNewPath={directory.setNewPath}
-            onCancel={() => directory.setShowPathDialog(false)}
-            onConfirm={directory.handlePathChange}
-          />
-        )}
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch flex-1">
-          {/* Video Player Area */}
-          <RecordingPlayer
-            currentVideo={library.currentVideo}
-            hasRecordings={library.recordings.length !== 0}
-          />
-
-          {/* Video Library */}
-          <VideoLibrary
-            recordings={library.recordings}
-            currentVideo={library.currentVideo}
-            currentPath={directory.currentPath}
-            loading={library.loading}
-            onRefresh={() => library.loadVideos()}
-            onChangeDirectory={directory.openPathDialog}
-            editingId={rename.editingId}
-            editingName={rename.editingName}
-            setEditingName={rename.setEditingName}
-            onPlay={library.handlePlayVideo}
-            onRenameStart={rename.handleRenameStart}
-            onRenameConfirm={rename.handleRenameConfirm}
-            onRenameCancel={rename.handleRenameCancel}
-            onDelete={library.handleDeleteVideo}
-          />
-        </div>
-
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 };

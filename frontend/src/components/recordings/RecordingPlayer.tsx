@@ -1,4 +1,4 @@
-// Video player area with the selected recording's details underneath.
+// Video player area with the selected recording's details attached below.
 
 import { getVideoUrl } from "../../hooks/recordings/constants";
 import type { VideoFile } from "../../utils/api";
@@ -18,28 +18,35 @@ export default function RecordingPlayer({
   return (
     <VideoContainer
       showPlaceholder={!currentVideo}
-      placeholderTitle="No Video Selected"
+      placeholderTitle={
+        hasRecordings ? "Pick a recording" : "No recordings yet"
+      }
       placeholderDescription={
-        !hasRecordings
-          ? "Load videos from your directory"
-          : "Select a video from the library to play"
+        hasRecordings
+          ? "Choose a recording from the library to play it here."
+          : "Recordings you make on the live page show up in the library."
       }
       bottomContent={
-        currentVideo ? (
-          <>
-            <h3 className="text-lg font-semibold text-slate-200 mb-2 truncate max-w-full">
+        currentVideo && (
+          <div className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+            <h2 className="min-w-0 truncate font-medium">
               {currentVideo.name}
-            </h3>
-            <div className="flex items-center space-x-4 text-slate-400">
-              <span>{formatFileSize(currentVideo.size)}</span>
-              <span>•</span>
-              <span>{formatDate(currentVideo.lastModified)}</span>
-            </div>
-          </>
-        ) : (
-          <p className="text-slate-400 text-center">
-            No video playing yet. Pick one from the playlist!
-          </p>
+            </h2>
+            <dl className="flex shrink-0 gap-5 text-sm">
+              <div className="flex gap-1.5">
+                <dt className="text-silt">Size</dt>
+                <dd className="tabular-nums">
+                  {formatFileSize(currentVideo.size)}
+                </dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt className="text-silt">Recorded</dt>
+                <dd className="tabular-nums">
+                  {formatDate(currentVideo.lastModified)}
+                </dd>
+              </div>
+            </dl>
+          </div>
         )
       }
     >
@@ -49,7 +56,7 @@ export default function RecordingPlayer({
         <video
           key={currentVideo.id}
           controls
-          className="w-full h-full object-cover"
+          className="h-full w-full object-contain"
           src={getVideoUrl(currentVideo.name)}
         >
           Your browser does not support the video tag.
