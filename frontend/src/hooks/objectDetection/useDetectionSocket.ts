@@ -57,6 +57,11 @@ export function useDetectionSocket(ctx: DetectionContext) {
     showToast,
   } = ctx;
 
+  // Only reconnect when the source list, selection or loading state changes.
+  // Don't add showToast or other per-render values here: they change on every
+  // render, and each reconnect makes the backend re-send camera_status, which
+  // resets the elapsed timer and restarts the MJPEG stream.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
   useEffect(() => {
     // Wait until the initial source has been loaded
     if (isLoadingSource || !selectedSource) return;
@@ -132,19 +137,5 @@ export function useDetectionSocket(ctx: DetectionContext) {
     return () => {
       newSocket.disconnect();
     };
-    // Reconnect only when these change (setters/ref are stable)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    customSources,
-    selectedSource,
-    isLoadingSource,
-    setSelectedSource,
-    showToast,
-    setIsRecording,
-    imgRef.current,
-    setIsDetecting,
-    setSettings,
-    setDetectionStartTime,
-    imgRef,
-  ]);
+  }, [customSources, selectedSource, isLoadingSource]);
 }
