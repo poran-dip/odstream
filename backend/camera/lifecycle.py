@@ -46,16 +46,17 @@ class CameraLifecycleMixin:
 
             # Use index from source for local camera
             camera_index = self.camera_source.get("index", 0)
-            self.camera = cv2.VideoCapture(camera_index)
+            with self.camera_lock:
+                self.camera = cv2.VideoCapture(camera_index)
 
-            if not self.camera.isOpened():
-                print(f"Failed to open camera at index {camera_index}")
-                return False, f"Failed to open camera at index {camera_index}"
+                if not self.camera.isOpened():
+                    print(f"Failed to open camera at index {camera_index}")
+                    return False, f"Failed to open camera at index {camera_index}"
 
-            # Set camera properties
-            self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, Config.CAMERA_WIDTH)
-            self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, Config.CAMERA_HEIGHT)
-            self.camera.set(cv2.CAP_PROP_FPS, Config.CAMERA_FPS)
+                # Set camera properties
+                self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, Config.CAMERA_WIDTH)
+                self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, Config.CAMERA_HEIGHT)
+                self.camera.set(cv2.CAP_PROP_FPS, Config.CAMERA_FPS)
 
             self.camera_started_at = time.time()
             print(f"Camera started successfully at index {camera_index}")
@@ -92,14 +93,7 @@ class CameraLifecycleMixin:
                 return success, message
 
             # Handle local camera - make sure to release properly
-            if self.camera is not None:
-                try:
-                    self.camera.release()
-                    print("Local camera released")
-                except Exception as e:
-                    print(f"Error releasing camera: {e}")
-                finally:
-                    self.camera = None
+            self._release_camera(log=True)
 
             # Clean up camera source references
             self.camera_source = None
@@ -111,15 +105,30 @@ class CameraLifecycleMixin:
         except Exception as e:
             print(f"Error stopping camera: {e}")
             # Force cleanup even on error
-            if hasattr(self, "camera") and self.camera is not None:
-                try:
-                    self.camera.release()
-                except Exception:
-                    pass
-                self.camera = None
+            self._release_camera()
             self.camera_source = None
             self.remote_camera = False
             return False, str(e)
+
+    def _release_camera(self, log=False):
+        """Release the local capture, if any.
+
+        Takes ``camera_lock`` so it waits for an in-progress read() (at most
+        one frame) instead of releasing underneath it, which can hang some
+        camera drivers and leave the stop request unanswered.
+        """
+        with self.camera_lock:
+            if self.camera is None:
+                return
+            try:
+                self.camera.release()
+                if log:
+                    print("Local camera released")
+            except Exception as e:
+                if log:
+                    print(f"Error releasing camera: {e}")
+            finally:
+                self.camera = None
 
     def change_camera_source(self, source):
         """Change camera source (stops current camera and starts new one)"""
@@ -136,12 +145,7 @@ class CameraLifecycleMixin:
             self.remote_camera = False
 
         # Force cleanup of any lingering camera objects
-        if hasattr(self, "camera") and self.camera is not None:
-            try:
-                self.camera.release()
-            except Exception:
-                pass
-            self.camera = None
+        self._release_camera()
 
         # Small delay to ensure cleanup is complete
         time.sleep(0.2)

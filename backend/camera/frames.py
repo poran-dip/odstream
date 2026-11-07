@@ -73,16 +73,18 @@ class FrameMixin:
                         return True, self._apply_settings(frame)
                     return False, None
             else:
-                # Local camera - add safety check
-                if self.camera is not None and self.camera.isOpened():
+                # Local camera: only one thread may touch the capture at a time
+                # (also stops release() from running in the middle of a read)
+                with self.camera_lock:
+                    if self.camera is None or not self.camera.isOpened():
+                        return False, None
                     # Start of the capture -> encode latency measurement
                     t0 = time.time()
                     success, frame = self.camera.read()
-                    self._last_capture_time = t0
-                    if success and frame is not None:
-                        frame = self._apply_settings(frame)
-                    return success, frame
-                return False, None
+                self._last_capture_time = t0
+                if success and frame is not None:
+                    frame = self._apply_settings(frame)
+                return success, frame
         except Exception as e:
             print(f"Error getting current frame: {e}")
             return False, None

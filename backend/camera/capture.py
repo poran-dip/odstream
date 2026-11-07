@@ -136,11 +136,12 @@ class CaptureMixin:
             if self.remote_camera:
                 fps = Config.CAMERA_FPS
             else:
-                fps = (
-                    self.camera.get(cv2.CAP_PROP_FPS)
-                    if self.camera
-                    else Config.CAMERA_FPS
-                )
+                with self.camera_lock:
+                    fps = (
+                        self.camera.get(cv2.CAP_PROP_FPS)
+                        if self.camera
+                        else Config.CAMERA_FPS
+                    )
 
             self.video_writer = cv2.VideoWriter(
                 str(output_path), fourcc, fps, (width, height)

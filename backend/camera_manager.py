@@ -38,6 +38,10 @@ class CameraManager(
 
         # --- Local camera / recording ---
         self.camera = None  # cv2.VideoCapture for local sources
+        # cv2.VideoCapture isn't thread-safe: every stream generator (one per
+        # viewer), snapshots, recording and stop/start use it from different
+        # threads. All access goes through this lock.
+        self.camera_lock = threading.Lock()
         self.video_writer = None  # cv2.VideoWriter while recording
         self.is_recording = False
         self.recording_filename = None

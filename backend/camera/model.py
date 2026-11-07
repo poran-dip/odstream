@@ -2,9 +2,11 @@
 
 import platform
 import sys
+import time
 import warnings
 from pathlib import Path
 
+import numpy as np
 import torch
 from config import Config
 from ultralytics import YOLO
@@ -93,11 +95,25 @@ class ModelMixin:
                 )
 
             print("Model loaded successfully!")
+            self._warm_up_model()
             return True
 
         except Exception as e:
             print(f"Error loading model: {e}")
             return False
+
+    def _warm_up_model(self):
+        """Run one inference on a blank frame right after loading.
+
+        The first real inference is slow (lazy CUDA/cuDNN setup, Ultralytics
+        predictor setup), which used to freeze the stream for a few seconds
+        the first time Record was pressed. Doing it here moves that cost to
+        startup. Errors are logged by _annotate_frame and otherwise ignored.
+        """
+        start = time.time()
+        blank = np.zeros((Config.CAMERA_HEIGHT, Config.CAMERA_WIDTH, 3), np.uint8)
+        self._annotate_frame(blank)
+        print(f"Model warmed up in {time.time() - start:.2f}s")
 
     def _annotate_frame(self, frame):
         """
