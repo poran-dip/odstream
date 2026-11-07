@@ -1,7 +1,9 @@
-// Live video panel: MJPEG <img>, live/recording pills and the readout strip
-// (FPS, latency, objects, elapsed) attached to its bottom edge.
+// Live video panel: MJPEG <img>, live/recording pills, a full-screen button
+// and the readout strip (FPS, latency, objects, elapsed) on its bottom edge.
 
-import type { RefObject } from "react";
+import { Maximize2, Minimize2 } from "lucide-react";
+import { type RefObject, useRef } from "react";
+import { useFullscreen } from "../../hooks/useFullscreen";
 import { formatElapsedTime } from "../../utils/formatters";
 import VideoContainer from "../VideoContainer";
 
@@ -26,6 +28,18 @@ export default function DetectionVideo({
   detectionCount,
   imgRef,
 }: DetectionVideoProps) {
+  // The whole panel (video + pills + readouts) goes full screen
+  const panelRef = useRef<HTMLElement>(null);
+  const { isFullscreen, toggle } = useFullscreen(panelRef);
+
+  const toggleFullscreen = () => {
+    // Rotate phones to match the feed: landscape unless the camera is portrait
+    const img = imgRef.current;
+    const fit =
+      img && img.naturalHeight > img.naturalWidth ? "portrait" : "landscape";
+    toggle(fit);
+  };
+
   // "—" until the camera is on and the first perf_update has arrived
   const readouts = [
     {
@@ -48,6 +62,8 @@ export default function DetectionVideo({
 
   return (
     <VideoContainer
+      containerRef={panelRef}
+      fullscreen={isFullscreen}
       showPlaceholder={!isDetecting}
       placeholderTitle="Camera is off"
       placeholderDescription="Turn the camera on to start the live feed. Detection runs while you record."
@@ -61,18 +77,40 @@ export default function DetectionVideo({
           )}
         </>
       }
+      topRightActions={
+        // Stays visible in full screen even if the camera stops, so there's
+        // always a way back out
+        (isDetecting || isFullscreen) && (
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit full screen" : "Full screen"}
+            aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+            aria-pressed={isFullscreen}
+            className="grid size-9 place-items-center rounded-md bg-deep/85 text-foam transition-colors hover:bg-deep"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="size-5" />
+            ) : (
+              <Maximize2 className="size-5" />
+            )}
+          </button>
+        )
+      }
       bottomContent={
         <dl className="grid grid-cols-2 sm:grid-cols-4">
           {readouts.map(({ label, value }) => (
             <div
               key={label}
-              className="border-line px-4 py-3 not-first:border-l max-sm:nth-3:border-l-0 max-sm:nth-[n+3]:border-t"
+              className={`border-line px-4 not-first:border-l max-sm:nth-3:border-l-0 max-sm:nth-[n+3]:border-t ${
+                isFullscreen ? "py-2" : "py-3"
+              }`}
             >
               {/* Condensed Archivo with fixed-width digits so values don't jitter */}
               <dd
-                className={`font-stretch-75% text-3xl font-semibold leading-none tabular-nums sm:text-4xl ${
-                  value === "—" ? "text-silt" : "text-foam"
-                }`}
+                className={`font-stretch-75% font-semibold leading-none tabular-nums ${
+                  isFullscreen ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
+                } ${value === "—" ? "text-silt" : "text-foam"}`}
               >
                 {value}
               </dd>
