@@ -5,7 +5,7 @@ import urllib.request
 
 def download_openh264():
     """Download OpenH264 DLL if not present"""
-    dll_name = "openh264-1.8.0-win64.dll"
+    dll_name = "openh264-2.5.0-win64.dll"
     dll_path = dll_name  # Root directory
 
     if not os.path.exists(dll_path):

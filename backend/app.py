@@ -131,7 +131,13 @@ def main():
         print("You can change the path using the /api/config/path endpoint")
 
     # Use socketio.run instead of app.run
-    socketio.run(app, host="0.0.0.0", debug=Config.DEBUG, port=Config.PORT)
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        debug=Config.DEBUG,
+        port=Config.PORT,
+        allow_unsafe_werkzeug=True,
+    )
 
 
 if __name__ == "__main__":

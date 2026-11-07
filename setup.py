@@ -28,7 +28,7 @@ def run(cmd, cwd):
 
 
 def download_openh264():
-    dll_name = "openh264-1.8.0-win64.dll"
+    dll_name = "openh264-2.5.0-win64.dll"
     dll_path = BACKEND / dll_name
 
     if dll_path.exists():
