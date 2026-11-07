@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, Info, AlertTriangle, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, Info, X } from "lucide-react";
 import { useEffect } from "react";
 
 export type ToastType = "success" | "error" | "warning" | "info";
@@ -58,7 +58,6 @@ const ToastDisplay: React.FC<ToastDisplayProps> = ({
           hoverBg: "hover:bg-yellow-500/20",
           closeColor: "text-yellow-400 hover:text-yellow-200",
         };
-      case "info":
       default:
         return {
           bg: "bg-blue-900/90",
@@ -75,21 +74,20 @@ const ToastDisplay: React.FC<ToastDisplayProps> = ({
   const getIcon = () => {
     switch (type) {
       case "success":
-        return <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />;
+        return <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" />;
       case "error":
-        return <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />;
+        return <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />;
       case "warning":
-        return <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />;
-      case "info":
+        return <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />;
       default:
-        return <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />;
+        return <Info className="w-5 h-5 shrink-0 mt-0.5" />;
     }
   };
 
   const styles = getToastStyles();
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 z-[9999] w-[calc(100vw-2rem)] max-w-sm sm:max-w-md sm:w-full animate-in slide-in-from-bottom-2 duration-300">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 z-9999 w-[calc(100vw-2rem)] max-w-sm sm:max-w-md sm:w-full animate-in slide-in-from-bottom-2 duration-300">
       <div
         className={`${styles.bg} border ${styles.border} backdrop-blur-md rounded-lg p-4 shadow-lg ${styles.shadow}`}
       >
@@ -97,7 +95,7 @@ const ToastDisplay: React.FC<ToastDisplayProps> = ({
           <div className={styles.iconColor}>{getIcon()}</div>
           <div className="flex-1 min-w-0">
             <p
-              className={`${styles.textColor} text-sm leading-relaxed break-words`}
+              className={`${styles.textColor} text-sm leading-relaxed wrap-break-word`}
             >
               {message}
             </p>
@@ -105,8 +103,9 @@ const ToastDisplay: React.FC<ToastDisplayProps> = ({
 
           {onClose && (
             <button
+              type="button"
               onClick={onClose}
-              className={`${styles.closeColor} transition-colors p-1 rounded-md ${styles.hoverBg} flex-shrink-0`}
+              className={`${styles.closeColor} transition-colors p-1 rounded-md ${styles.hoverBg} shrink-0`}
             >
               <X className="w-4 h-4" />
             </button>

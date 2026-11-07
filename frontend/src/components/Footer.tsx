@@ -19,7 +19,7 @@ const Footer = () => {
               IIT Guwahati
             </span>
           </p>
-          <div className="w-16 h-px bg-gradient-to-r from-blue-500 to-purple-500 mx-auto opacity-60"></div>
+          <div className="w-16 h-px bg-linear-to-r from-blue-500 to-purple-500 mx-auto opacity-60"></div>
           <p className="text-lg text-gray-700 dark:text-gray-200 font-medium">
             Funded by:{" "}
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold">

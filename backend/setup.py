@@ -1,6 +1,6 @@
+import bz2
 import os
 import urllib.request
-import bz2
 
 
 def download_openh264():
@@ -15,9 +15,8 @@ def download_openh264():
         urllib.request.urlretrieve(url, f"{dll_path}.bz2")
 
         # Extract bz2
-        with bz2.open(f"{dll_path}.bz2", "rb") as f_in:
-            with open(dll_path, "wb") as f_out:
-                f_out.write(f_in.read())
+        with bz2.open(f"{dll_path}.bz2", "rb") as f_in, open(dll_path, "wb") as f_out:
+            f_out.write(f_in.read())
 
         os.remove(f"{dll_path}.bz2")
         print(f"Downloaded and extracted to {dll_path}")

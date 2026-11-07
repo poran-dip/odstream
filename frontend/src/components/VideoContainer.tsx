@@ -23,7 +23,7 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
   return (
     <div className={`lg:col-span-3 ${className}`}>
       <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl overflow-hidden">
-        <div className="relative aspect-video bg-gradient-to-br from-slate-800 to-slate-900">
+        <div className="relative aspect-video bg-linear-to-br from-slate-800 to-slate-900">
           {showPlaceholder ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">

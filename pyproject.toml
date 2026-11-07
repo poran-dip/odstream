@@ -1,0 +1,5 @@
+[tool.ruff.lint]
+ignore = [
+  "BLE001",  # broad `except Exception` is intentional: methods return (False, msg) instead of crashing
+  "S110",    # try/except/pass is used for best-effort cleanup
+]

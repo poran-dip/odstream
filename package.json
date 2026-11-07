@@ -1,0 +1,16 @@
+{
+  "name": "odstream",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev:frontend": "cd frontend && pnpm dev",
+    "dev:backend": "cd backend && python app.py",
+    "dev": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
+    "lint": "biome check . --fix"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
+    "concurrently": "^10.0.6"
+  }
+}
