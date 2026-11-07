@@ -1,4 +1,5 @@
-// Live video panel: MJPEG <img>, RUNNING/RECORDING badges and stats footer.
+// Live video panel: MJPEG <img>, live/recording pills and the readout strip
+// (FPS, latency, objects, elapsed) attached to its bottom edge.
 
 import type { RefObject } from "react";
 import { formatElapsedTime } from "../../utils/formatters";
@@ -25,61 +26,83 @@ export default function DetectionVideo({
   detectionCount,
   imgRef,
 }: DetectionVideoProps) {
+  // "—" until the camera is on and the first perf_update has arrived
+  const readouts = [
+    {
+      label: "frames per second",
+      value: isDetecting && currentFps > 0 ? currentFps.toFixed(1) : "—",
+    },
+    {
+      label: "ms pipeline latency",
+      value: isDetecting && latencyMs !== null ? latencyMs.toFixed(1) : "—",
+    },
+    {
+      label: "objects in view",
+      value: isDetecting ? String(detectionCount) : "—",
+    },
+    {
+      label: "elapsed",
+      value: isDetecting ? formatElapsedTime(detectionStartTime) : "—",
+    },
+  ];
+
   return (
     <VideoContainer
       showPlaceholder={!isDetecting}
-      placeholderTitle="AI Detection Ready"
-      placeholderDescription="Click 'Start Detection' to begin real-time object detection"
+      placeholderTitle="Camera is off"
+      placeholderDescription="Turn the camera on to start the live feed. Detection runs while you record."
       statusIndicators={
         <>
-          {isDetecting && (
-            <div className="bg-green-500/20 border border-green-500/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-green-400 animate-pulse">
-              ● RUNNING
-            </div>
-          )}
+          {isDetecting && <StatusPill dotClass="bg-kelp">Live</StatusPill>}
           {isRecording && (
-            <div className="bg-red-500/20 border border-red-500/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium text-red-400 animate-pulse">
-              ● RECORDING
-            </div>
+            <StatusPill dotClass="bg-signal motion-safe:animate-pulse">
+              Recording
+            </StatusPill>
           )}
         </>
       }
       bottomContent={
-        isDetecting ? (
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-200 mb-1">
-                Detection Active
-              </h3>
-              <p className="text-slate-400">
-                Time elapsed: {formatElapsedTime(detectionStartTime)}
-              </p>
+        <dl className="grid grid-cols-2 sm:grid-cols-4">
+          {readouts.map(({ label, value }) => (
+            <div
+              key={label}
+              className="border-line px-4 py-3 not-first:border-l max-sm:nth-3:border-l-0 max-sm:nth-[n+3]:border-t"
+            >
+              {/* Condensed Archivo with fixed-width digits so values don't jitter */}
+              <dd
+                className={`font-stretch-75% text-3xl font-semibold leading-none tabular-nums sm:text-4xl ${
+                  value === "—" ? "text-silt" : "text-foam"
+                }`}
+              >
+                {value}
+              </dd>
+              <dt className="mt-1.5 text-sm text-silt">{label}</dt>
             </div>
-            {/* "—" until the first perf_update arrives */}
-            <div className="text-right">
-              <p className="text-sm text-slate-400">
-                Objects detected: {detectionCount}
-              </p>
-              <p className="text-sm text-slate-400">
-                FPS: {currentFps > 0 ? currentFps.toFixed(1) : "—"}
-              </p>
-              <p className="text-sm text-slate-400">
-                Pipeline Latency: {latencyMs !== null ? `${latencyMs}ms` : "—"}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <p className="text-slate-400 text-center">
-            Start detection to view real-time statistics
-          </p>
-        )
+          ))}
+        </dl>
       }
     >
       <img
         ref={imgRef}
-        alt="Video Stream"
-        className="w-full h-full object-cover"
+        alt="Live camera feed"
+        className="h-full w-full object-contain"
       />
     </VideoContainer>
+  );
+}
+
+/** Small pill over the video, e.g. "● Live". */
+function StatusPill({
+  dotClass,
+  children,
+}: {
+  dotClass: string;
+  children: string;
+}) {
+  return (
+    <span className="flex items-center gap-2 rounded-full bg-deep/85 px-3 py-1 text-sm font-medium">
+      <span className={`size-2 rounded-full ${dotClass}`} aria-hidden="true" />
+      {children}
+    </span>
   );
 }

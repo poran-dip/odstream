@@ -1,3 +1,7 @@
+// Video frame shared by the live view and the recordings player.
+// Status pills sit over the top-left corner; bottomContent is attached to the
+// bottom edge of the same frame (the readout strip / file details).
+
 import { Camera } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -21,41 +25,36 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`lg:col-span-3 ${className}`}>
-      <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl overflow-hidden">
-        <div className="relative aspect-video bg-linear-to-br from-slate-800 to-slate-900">
-          {showPlaceholder ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <Camera className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 text-slate-500 mx-auto mb-4 sm:mb-6" />
-                <h3 className="text-lg sm:text-xl font-semibold text-slate-300 mb-2">
-                  {placeholderTitle}
-                </h3>
-                <p className="text-sm sm:text-base text-slate-400 px-4 sm:px-0">
-                  {placeholderDescription}
-                </p>
-              </div>
+    <section className={`panel min-w-0 overflow-hidden ${className}`}>
+      <div className="relative aspect-video bg-deep">
+        {showPlaceholder ? (
+          <div className="absolute inset-0 grid place-items-center p-6 text-center">
+            <div>
+              <Camera
+                className="mx-auto mb-3 size-10 text-silt"
+                strokeWidth={1.5}
+              />
+              <h2 className="text-lg font-semibold">{placeholderTitle}</h2>
+              <p className="mt-1 max-w-sm text-sm text-silt">
+                {placeholderDescription}
+              </p>
             </div>
-          ) : (
-            children
-          )}
+          </div>
+        ) : (
+          children
+        )}
 
-          {/* Status Indicators */}
-          {statusIndicators && (
-            <div className="absolute top-4 left-4 flex space-x-2">
-              {statusIndicators}
-            </div>
-          )}
-        </div>
+        {statusIndicators && (
+          <div className="absolute left-3 top-3 flex gap-2">
+            {statusIndicators}
+          </div>
+        )}
       </div>
 
-      {/* Bottom Content */}
       {bottomContent && (
-        <div className="mt-6 bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl p-6">
-          {bottomContent}
-        </div>
+        <div className="border-t border-line">{bottomContent}</div>
       )}
-    </div>
+    </section>
   );
 };
 

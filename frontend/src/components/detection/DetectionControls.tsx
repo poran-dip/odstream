@@ -1,16 +1,14 @@
-// Right-hand sidebar: camera controls, recording controls and system status.
+// Right-hand control rail: camera on/off, the Record button and Snapshot.
 //
 // NOTE: components/ControlsPanel.tsx is an older, currently unused variant of
-// this panel (different button labels); it is left untouched.
+// this panel; it is left untouched.
 
-import { Camera, Play, Square } from "lucide-react";
-import type { CameraSource } from "../../utils/storage";
+import { Camera, Circle, Square } from "lucide-react";
 
 interface DetectionControlsProps {
   isDetecting: boolean;
   isRecording: boolean;
   loading: boolean;
-  selectedSource: CameraSource;
   onStartCamera: () => void;
   onStopCamera: () => void;
   onStartRecording: () => void;
@@ -18,73 +16,76 @@ interface DetectionControlsProps {
   onTakeSnapshot: () => void;
 }
 
-const CARD =
-  "bg-slate-800/30 backdrop-blur-sm border border-slate-600/30 rounded-2xl p-6";
-const CARD_TITLE = "text-lg font-semibold mb-4 text-slate-200";
-
 export default function DetectionControls({
   isDetecting,
   isRecording,
   loading,
-  selectedSource,
   onStartCamera,
   onStopCamera,
   onStartRecording,
   onStopRecording,
   onTakeSnapshot,
 }: DetectionControlsProps) {
+  // Same handlers as before: turning off still goes through the
+  // "stop for everyone?" confirmation.
+  const cameraStatus = loading
+    ? isDetecting
+      ? "Stopping…"
+      : "Starting…"
+    : isDetecting
+      ? "On"
+      : "Off";
+
   return (
-    <div className="space-y-4">
-      {/* Detection Controls */}
-      <div className={CARD}>
-        <h3 className={CARD_TITLE}>Detection Controls</h3>
-
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={onStartCamera}
-            disabled={loading || isDetecting}
-            className="w-full bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
-          >
-            <Play className="w-5 h-5" />
-            <span>{loading ? "Starting..." : "Start Camera"}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onStopCamera}
-            disabled={loading || !isDetecting}
-            className="w-full bg-linear-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 disabled:hover:scale-100"
-          >
-            <Square className="w-5 h-5" />
-            <span>{loading ? "Stopping..." : "Stop Camera"}</span>
-          </button>
+    <aside className="panel flex flex-col divide-y divide-line self-start">
+      {/* Camera on/off */}
+      <div className="flex items-center justify-between gap-4 p-4">
+        <div>
+          <p className="font-medium" id="camera-switch-label">
+            Camera
+          </p>
+          <p className="text-sm text-silt">{cameraStatus}</p>
         </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isDetecting}
+          aria-labelledby="camera-switch-label"
+          onClick={isDetecting ? onStopCamera : onStartCamera}
+          disabled={loading}
+          className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            isDetecting ? "border-kelp bg-kelp/25" : "border-line bg-deep"
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className={`absolute top-1/2 size-5 -translate-y-1/2 rounded-full transition-[left] ${
+              isDetecting
+                ? "left-[calc(100%-1.375rem)] bg-kelp"
+                : "left-0.5 bg-silt"
+            }`}
+          />
+        </button>
       </div>
 
-      {/* Recording Controls */}
-      <div className={CARD}>
-        <h3 className={CARD_TITLE}>Recording</h3>
-
-        {/* Single toggle button: Start <-> Stop */}
+      {/* Recording: the one orange (or red, while recording) button */}
+      <div className="space-y-3 p-4">
         <button
           type="button"
           onClick={isRecording ? onStopRecording : onStartRecording}
-          className={`w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 mb-3 ${
-            isRecording
-              ? "bg-linear-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700"
-              : "bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+          className={`flex h-14 w-full items-center justify-center gap-2.5 rounded-md text-lg font-semibold text-deep transition-[filter] hover:brightness-110 ${
+            isRecording ? "bg-signal" : "bg-buoy"
           }`}
         >
           {isRecording ? (
             <>
-              <Square className="w-5 h-5" />
-              <span>Stop Recording</span>
+              <Square className="size-5 fill-current" />
+              Stop recording
             </>
           ) : (
             <>
-              <Play className="w-5 h-5" />
-              <span>Start Recording</span>
+              <Circle className="size-5 fill-current" />
+              Record
             </>
           )}
         </button>
@@ -92,53 +93,18 @@ export default function DetectionControls({
         <button
           type="button"
           onClick={onTakeSnapshot}
-          className="w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+          className="btn-secondary w-full"
         >
-          <Camera className="w-5 h-5" />
-          <span>Take Snapshot</span>
+          <Camera className="size-5" />
+          Take snapshot
         </button>
+
+        <p className="text-sm text-silt">
+          {isDetecting
+            ? "Recordings include detection boxes and a detection log."
+            : "Turn the camera on to record or take snapshots."}
+        </p>
       </div>
-
-      {/* Quick Stats */}
-      <div className={CARD}>
-        <h3 className={CARD_TITLE}>System Status</h3>
-
-        <div className="space-y-3">
-          <StatusRow
-            label="Detection"
-            value={isDetecting ? "Active" : "Inactive"}
-            valueClass={isDetecting ? "text-green-400" : "text-slate-400"}
-          />
-          <StatusRow
-            label="Recording"
-            value={isRecording ? "Recording" : "Stopped"}
-            valueClass={isRecording ? "text-red-400" : "text-slate-400"}
-          />
-          <StatusRow
-            label="Source"
-            value={selectedSource.name}
-            valueClass="text-blue-400"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** "Label ........ Value" row in the System Status card. */
-function StatusRow({
-  label,
-  value,
-  valueClass,
-}: {
-  label: string;
-  value: string;
-  valueClass: string;
-}) {
-  return (
-    <div className="flex justify-between items-center">
-      <span className="text-slate-400">{label}</span>
-      <span className={`font-semibold ${valueClass}`}>{value}</span>
-    </div>
+    </aside>
   );
 }

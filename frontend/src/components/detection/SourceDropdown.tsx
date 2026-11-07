@@ -1,6 +1,6 @@
 // Header dropdown for picking the active camera source.
 
-import { Camera, ChevronDown } from "lucide-react";
+import { Camera, Check, ChevronDown } from "lucide-react";
 import type { CameraSource } from "../../utils/storage";
 
 interface SourceDropdownProps {
@@ -21,7 +21,7 @@ export default function SourceDropdown({
   onSelect,
 }: SourceDropdownProps) {
   return (
-    <div className="relative flex-1 lg:w-64 min-w-0">
+    <div className="relative min-w-0 flex-1 sm:w-60 sm:flex-none">
       {/* Toggle button showing the current source */}
       <button
         type="button"
@@ -29,34 +29,35 @@ export default function SourceDropdown({
         onClick={onToggle}
         disabled={isLoading}
         aria-expanded={isOpen}
-        className="w-full bg-slate-800/50 hover:bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl transition-all duration-200 hover:scale-105 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex h-10 w-full items-center gap-2 rounded-md border border-line bg-hull px-3 text-left transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <div className="flex items-center space-x-2 truncate">
-          <Camera className="w-5 h-5 text-slate-300 shrink-0" />
-          <span className="text-sm text-slate-300 truncate">
-            {isLoading ? "Loading..." : selectedSource?.name || "Unknown"}
-          </span>
-        </div>
-        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+        <Camera className="size-4 shrink-0 text-silt" />
+        <span className="min-w-0 flex-1 truncate">
+          {isLoading ? "Loading…" : selectedSource?.name || "Unknown"}
+        </span>
+        <ChevronDown
+          className={`size-4 shrink-0 text-silt transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
       </button>
 
       {/* Source list */}
       {isOpen && !isLoading && (
-        <div className="absolute top-full left-0 mt-2 w-full lg:w-64 bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-xl shadow-xl z-10">
-          {sources.map((source) => (
-            <button
-              type="button"
-              key={source.id}
-              onClick={() => onSelect(source)}
-              className={`w-full text-left px-4 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-slate-700/50 ${
-                selectedSource?.id === source.id
-                  ? "bg-blue-600/20 text-blue-300"
-                  : "text-slate-300"
-              }`}
-            >
-              {source.name}
-            </button>
-          ))}
+        <div className="absolute right-0 left-0 top-full z-20 mt-1 overflow-hidden rounded-md border border-line bg-hull py-1 shadow-lg shadow-deep/60">
+          {sources.map((source) => {
+            const selected = selectedSource?.id === source.id;
+            return (
+              <button
+                type="button"
+                aria-pressed={selected}
+                key={source.id}
+                onClick={() => onSelect(source)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-raised"
+              >
+                <span className="min-w-0 flex-1 truncate">{source.name}</span>
+                {selected && <Check className="size-4 shrink-0 text-foam" />}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
