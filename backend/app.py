@@ -2,13 +2,16 @@ import socket
 from pathlib import Path
 
 from config import Config
-from flask import Flask
+from flask import Flask, abort, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from routes.camera_routes import camera_bp, get_camera_manager, init_socketio
 from routes.config_routes import config_bp
 from routes.socket_events import register_socket_events
 from routes.video_routes import get_video_manager, video_bp
+
+# Production build of the frontend (created by build.py / `pnpm build`)
+FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
 
 
 def get_local_ip():
@@ -57,7 +60,10 @@ export const API_URL = "{ip_address}";
 
 def create_app():
     """Application factory function"""
-    app = Flask(__name__)
+    # static_folder=None: the built frontend is served by serve_frontend below.
+    # (Flask's own static route would 404 on client-side routes like
+    # /recordings before the index.html fallback could run.)
+    app = Flask(__name__, static_folder=None)
     app.config.from_object(Config)
 
     # Enable CORS
@@ -65,6 +71,7 @@ def create_app():
 
     # Initialize SocketIO
     socketio = SocketIO(app, cors_allowed_origins="*")
+    print(f"SocketIO async mode: {socketio.server.eio.async_mode}")
 
     # Initialize socketio in camera routes
     init_socketio(socketio)
@@ -76,6 +83,19 @@ def create_app():
     app.register_blueprint(video_bp)
     app.register_blueprint(camera_bp)
     app.register_blueprint(config_bp)
+
+    # Serve the production frontend build (frontend/dist, see build.py) from
+    # the site root; API routes keep their /api prefix. Real files are served
+    # as-is, anything else gets index.html so client-side routes work on refresh.
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def serve_frontend(path):
+        # Unknown API paths should still 404, not return the app's HTML
+        if path.startswith("api/"):
+            abort(404)
+        if path and (FRONTEND_DIST / path).exists():
+            return send_from_directory(FRONTEND_DIST, path)
+        return send_from_directory(FRONTEND_DIST, "index.html")
 
     # Auto-start camera after app initialization
     with app.app_context():
